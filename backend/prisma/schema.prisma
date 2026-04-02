@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model user information store karne ke liye
+model User {
+  id        Int         @id @default(autoincrement())
+  name      String
+  email     String      @unique
+  password  String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  interviews Interview[]
+  progress  Progress[]
+}
+
+// AI Mock Interview history store karne ke liye
+model Interview {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  topic     String
+  score     Int?
+  feedback  String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions Question[]
+}
+
+// Interview ke andar jo questions pooche gaye aur unke evaluation ke liye
+model Question {
+  id          Int      @id @default(autoincrement())
+  interviewId Int
+  question    String
+  answer      String?
+  evaluation  String?
+  score       Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+}
+
+// User ka overall progress aur analytics track karne ke liye
+model Progress {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  topic     String
+  avgScore  Float    @default(0)
+  totalIter Int      @default(0) // Kitne interviews diye is topic par
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
