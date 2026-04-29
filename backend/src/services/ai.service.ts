@@ -315,3 +315,297 @@ Detail-oriented and adaptable Software Engineer with demonstrated proficiency in
     throw new ApiError(500, `Resume generation mein problem aayi: ${error.message}`);
   }
 };
+
+// ============================================
+// Company-Specific Interview Questions generate karo
+// Target company ke known patterns ke basis pe questions
+// ============================================
+export const generateCompanyInterview = async (
+  company: string,
+  role: string,
+  difficulty: string = 'medium',
+  count: number = 5
+): Promise<{ questions: string[]; tips: string[]; companyInfo: string }> => {
+  try {
+    logger.info(`Company interview generate ho raha hai - Company: ${company}, Role: ${role}`);
+
+    const response = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You are an expert interview coach who knows the interview styles of top companies.
+
+Generate a company-specific interview for the given company and role.
+
+Return a JSON object with:
+1. "questions": Array of exactly ${count} interview questions (mix of technical, behavioral, and culture-fit) that this specific company is known to ask
+2. "tips": Array of 3-4 company-specific tips (e.g., "Amazon focuses on Leadership Principles", "Google values problem-solving approach over just the answer")
+3. "companyInfo": A 1-sentence description of this company's interview style
+
+Difficulty: ${difficulty}
+Return ONLY valid JSON.`,
+        },
+        {
+          role: 'user',
+          content: `Company: ${company}\nRole: ${role}\nGenerate ${count} interview questions for this position.`,
+        },
+      ],
+      temperature: 0.6,
+      max_tokens: 1500,
+    });
+
+    const content = response.choices[0]?.message?.content?.trim();
+    if (!content) throw new ApiError(500, 'AI se company interview nahi aaya');
+
+    try {
+      const result = JSON.parse(content);
+      logger.info(`Company interview questions generated for ${company}`);
+      return result;
+    } catch {
+      return {
+        questions: [
+          `Tell me about yourself and why you want to join ${company}.`,
+          `Describe a challenging project you worked on as a ${role}.`,
+          `How do you handle tight deadlines and pressure?`,
+          `What makes you a good fit for ${company}'s culture?`,
+          `Where do you see yourself in 5 years at ${company}?`,
+        ].slice(0, count),
+        tips: [`Research ${company}'s core values before the interview.`, `Practice STAR format for behavioral questions.`],
+        companyInfo: `${company} values strong technical skills and culture alignment.`,
+      };
+    }
+  } catch (error: any) {
+    if (error.message?.includes('429') || error.status === 429) {
+      return {
+        questions: Array.from({ length: count }, (_, i) => `${company} Question ${i + 1}: Describe your experience with ${role} responsibilities.`),
+        tips: [`Research ${company}'s mission and values.`, 'Practice STAR method for behavioral questions.'],
+        companyInfo: `${company} is known for rigorous technical and behavioral interviews.`,
+      };
+    }
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(500, `Company interview generation mein problem: ${error.message}`);
+  }
+};
+
+// ============================================
+// JD (Job Description) parse karke custom interview generate karo
+// ============================================
+export const generateJDInterview = async (
+  jobDescription: string,
+  count: number = 5
+): Promise<{ questions: string[]; extractedSkills: string[]; roleTitle: string; difficulty: string }> => {
+  try {
+    logger.info('JD-based interview generate ho raha hai');
+
+    const response = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You are an expert technical recruiter. Analyze the job description and generate a targeted interview.
+
+Return a JSON object with:
+1. "roleTitle": Extracted job title from the JD
+2. "extractedSkills": Array of 5-8 key skills/technologies extracted from the JD
+3. "difficulty": Estimated difficulty level ("easy", "medium", or "hard") based on requirements
+4. "questions": Array of exactly ${count} interview questions highly specific to the JD's requirements
+   - Mix: 60% technical (based on listed skills), 40% behavioral/situational
+   - Questions should directly reference technologies/requirements from the JD
+
+Return ONLY valid JSON.`,
+        },
+        {
+          role: 'user',
+          content: `Job Description:\n${jobDescription}\n\nGenerate ${count} targeted interview questions.`,
+        },
+      ],
+      temperature: 0.4,
+      max_tokens: 1500,
+    });
+
+    const content = response.choices[0]?.message?.content?.trim();
+    if (!content) throw new ApiError(500, 'AI se JD interview nahi aaya');
+
+    try {
+      const result = JSON.parse(content);
+      logger.info(`JD interview generated - Role: ${result.roleTitle}, Skills: ${result.extractedSkills?.length}`);
+      return result;
+    } catch {
+      return {
+        roleTitle: 'Software Engineer',
+        extractedSkills: ['JavaScript', 'React', 'Node.js'],
+        difficulty: 'medium',
+        questions: Array.from({ length: count }, (_, i) => `Question ${i + 1}: Based on the JD requirements, explain your experience with the listed technologies.`),
+      };
+    }
+  } catch (error: any) {
+    if (error.message?.includes('429') || error.status === 429) {
+      return {
+        roleTitle: 'Software Engineer',
+        extractedSkills: ['JavaScript', 'Problem Solving', 'Communication'],
+        difficulty: 'medium',
+        questions: Array.from({ length: count }, (_, i) => `Question ${i + 1}: Describe your experience relevant to this role.`),
+      };
+    }
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(500, `JD interview generation mein problem: ${error.message}`);
+  }
+};
+
+// ============================================
+// Advanced ATS Score compute karo - 5 dimensions
+// Full semantic analysis with section detection
+// ============================================
+export const computeAdvancedATSScore = async (
+  resumeText: string,
+  jobDescription?: string,
+  targetRole?: string
+): Promise<{
+  totalScore: number;
+  breakdown: {
+    keywordMatch: { score: number; max: number; matchedKeywords: string[]; missingKeywords: string[] };
+    sectionCompleteness: { score: number; max: number; presentSections: string[]; missingSections: string[] };
+    formattingQuality: { score: number; max: number; issues: string[] };
+    quantification: { score: number; max: number; examples: string[] };
+    lengthOptimization: { score: number; max: number; wordCount: number; feedback: string };
+  };
+  grade: string;
+  aiSuggestions: string[];
+  isATSFriendly: boolean;
+}> => {
+  try {
+    logger.info('Advanced ATS score compute ho raha hai');
+
+    // --- SECTION COMPLETENESS (20 pts) ---
+    const resumeLower = resumeText.toLowerCase();
+    const sections = [
+      { name: 'Contact Info', keywords: ['email', 'phone', 'linkedin', 'github', '@'] },
+      { name: 'Summary/Objective', keywords: ['summary', 'objective', 'profile', 'about'] },
+      { name: 'Experience', keywords: ['experience', 'work history', 'employment', 'worked at', 'company'] },
+      { name: 'Education', keywords: ['education', 'degree', 'university', 'college', 'b.tech', 'b.e.', 'b.sc'] },
+      { name: 'Skills', keywords: ['skills', 'technologies', 'tech stack', 'proficient', 'expertise'] },
+    ];
+    const presentSections: string[] = [];
+    const missingSections: string[] = [];
+    sections.forEach(s => {
+      if (s.keywords.some(kw => resumeLower.includes(kw))) presentSections.push(s.name);
+      else missingSections.push(s.name);
+    });
+    const sectionScore = Math.round((presentSections.length / sections.length) * 20);
+
+    // --- QUANTIFICATION (10 pts) ---
+    const quantRegex = /\b\d+[%\+xX]?\s*(percent|users|clients|projects|engineers|team|members|ms|seconds|hours|days|million|k|m)?/gi;
+    const quantMatches = resumeText.match(quantRegex) || [];
+    const quantScore = Math.min(10, quantMatches.length * 2);
+    const quantExamples = quantMatches.slice(0, 3);
+
+    // --- LENGTH (10 pts) ---
+    const wordCount = resumeText.trim().split(/\s+/).length;
+    let lengthScore = 0;
+    let lengthFeedback = '';
+    if (wordCount >= 400 && wordCount <= 700) { lengthScore = 10; lengthFeedback = 'Optimal length (400-700 words)'; }
+    else if (wordCount >= 300 && wordCount <= 900) { lengthScore = 7; lengthFeedback = `${wordCount} words — slightly ${wordCount < 400 ? 'short' : 'long'}, aim for 400-700`; }
+    else if (wordCount >= 200) { lengthScore = 4; lengthFeedback = `${wordCount} words — ${wordCount < 300 ? 'too short' : 'too long'} for most ATS systems`; }
+    else { lengthScore = 1; lengthFeedback = `Only ${wordCount} words — significantly too short`; }
+
+    // --- FORMATTING (20 pts) - basic heuristics ---
+    const formattingIssues: string[] = [];
+    let formattingScore = 20;
+    if (!resumeText.includes('•') && !resumeText.includes('-') && !resumeText.includes('*')) {
+      formattingIssues.push('No bullet points detected — use bullets for experience items');
+      formattingScore -= 8;
+    }
+    if (resumeText.includes('|') && resumeText.split('|').length > 10) {
+      formattingIssues.push('Tables detected — ATS systems cannot parse tables');
+      formattingScore -= 7;
+    }
+    if (wordCount < 100) {
+      formattingIssues.push('Resume appears very sparse — add more content');
+      formattingScore -= 5;
+    }
+    formattingScore = Math.max(0, formattingScore);
+
+    // --- KEYWORD MATCH (40 pts) via AI ---
+    const keywordResponse = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You are an ATS (Applicant Tracking System) expert. Analyze a resume for keyword match.
+
+${jobDescription ? `Job Description: ${jobDescription}\n` : ''}
+${targetRole ? `Target Role: ${targetRole}\n` : ''}
+
+Extract and compare:
+1. "matchedKeywords": Array of important skills/keywords present in the resume (max 10)
+2. "missingKeywords": Array of important keywords that are missing from the resume (max 8)
+3. "aiSuggestions": Array of 4-5 specific, actionable improvement suggestions
+
+Return ONLY valid JSON.`,
+        },
+        {
+          role: 'user',
+          content: `Resume:\n${resumeText.substring(0, 3000)}`,
+        },
+      ],
+      temperature: 0.2,
+      max_tokens: 800,
+    });
+
+    const kwContent = keywordResponse.choices[0]?.message?.content?.trim() || '{}';
+    let kwResult: any = { matchedKeywords: [], missingKeywords: [], aiSuggestions: [] };
+    try { kwResult = JSON.parse(kwContent); } catch { /* use defaults */ }
+
+    const keywordScore = Math.min(40, Math.round(
+      (kwResult.matchedKeywords.length / Math.max(1, kwResult.matchedKeywords.length + kwResult.missingKeywords.length)) * 40
+    ));
+
+    const totalScore = keywordScore + sectionScore + formattingScore + quantScore + lengthScore;
+
+    // Grade calculation
+    let grade = 'F';
+    if (totalScore >= 90) grade = 'A+';
+    else if (totalScore >= 80) grade = 'A';
+    else if (totalScore >= 70) grade = 'B+';
+    else if (totalScore >= 60) grade = 'B';
+    else if (totalScore >= 50) grade = 'C';
+    else if (totalScore >= 35) grade = 'D';
+
+    logger.info(`Advanced ATS Score: ${totalScore}/100, Grade: ${grade}`);
+
+    return {
+      totalScore,
+      breakdown: {
+        keywordMatch: { score: keywordScore, max: 40, matchedKeywords: kwResult.matchedKeywords || [], missingKeywords: kwResult.missingKeywords || [] },
+        sectionCompleteness: { score: sectionScore, max: 20, presentSections, missingSections },
+        formattingQuality: { score: formattingScore, max: 20, issues: formattingIssues },
+        quantification: { score: quantScore, max: 10, examples: quantExamples },
+        lengthOptimization: { score: lengthScore, max: 10, wordCount, feedback: lengthFeedback },
+      },
+      grade,
+      aiSuggestions: kwResult.aiSuggestions || [],
+      isATSFriendly: totalScore >= 60,
+    };
+  } catch (error: any) {
+    if (error.message?.includes('429') || error.status === 429) {
+      const wc = resumeText.trim().split(/\s+/).length;
+      const fallbackScore = Math.min(70, 30 + Math.round((wc / 700) * 30));
+      return {
+        totalScore: fallbackScore,
+        breakdown: {
+          keywordMatch: { score: 20, max: 40, matchedKeywords: ['skills', 'experience'], missingKeywords: ['quantification', 'action verbs'] },
+          sectionCompleteness: { score: 15, max: 20, presentSections: ['Experience', 'Skills'], missingSections: ['Summary'] },
+          formattingQuality: { score: 15, max: 20, issues: ['Add bullet points for better ATS parsing'] },
+          quantification: { score: 4, max: 10, examples: [] },
+          lengthOptimization: { score: 6, max: 10, wordCount: wc, feedback: `${wc} words` },
+        },
+        grade: fallbackScore >= 60 ? 'B' : 'C',
+        aiSuggestions: ['Quantify your achievements with numbers.', 'Add a professional summary section.', 'Use strong action verbs.', 'Tailor skills to the job description.'],
+        isATSFriendly: fallbackScore >= 60,
+      };
+    }
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(500, `ATS scoring mein problem: ${error.message}`);
+  }
+};

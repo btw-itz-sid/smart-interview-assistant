@@ -5,6 +5,7 @@
 
 import { Response } from 'express';
 import * as resumeService from '../services/resume.service';
+import * as aiService from '../services/ai.service';
 import { resumeAnalyzeSchema } from '../models/validation';
 import { asyncHandler } from '../utils/asyncHandler';
 import { sendResponse } from '../utils/apiResponse';
@@ -86,5 +87,24 @@ export const generateResume = asyncHandler(
     const generatedResume = await resumeService.generateNewResume(userId);
 
     sendResponse(res, 200, 'Resume successfully generated! 🎉', { resume: generatedResume });
+  }
+);
+
+// ============================================
+// POST /api/resume/ats-score - Advanced 5-dimension ATS Score
+// Keyword match + section + formatting + quantification + length
+// ============================================
+export const advancedATSScore = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    logger.info('Advanced ATS score request aayi');
+
+    const { resumeText, jobDescription, targetRole } = req.body;
+
+    if (!resumeText || resumeText.trim().length < 30) {
+      return sendResponse(res, 400, 'Resume text required hai (min 30 characters)');
+    }
+
+    const result = await aiService.computeAdvancedATSScore(resumeText, jobDescription, targetRole);
+    sendResponse(res, 200, 'Advanced ATS score ready!', result);
   }
 );

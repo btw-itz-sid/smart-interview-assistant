@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, MessageSquare, History, FileText, LogOut, User as UserIcon, Menu, X } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, History, FileText, LogOut, User as UserIcon, Menu, X, Building2, Zap } from 'lucide-react';
 import AppLogo from './AppLogo';
 
 interface NavItem {
@@ -11,11 +11,33 @@ interface NavItem {
   badge?: string;
 }
 
-const navItems: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard',      path: '/' },
-  { icon: MessageSquare,   label: 'Mock Interview', path: '/interview' },
-  { icon: History,         label: 'Chat History',   path: '/history' },
-  { icon: FileText,        label: 'Resume Analyzer',path: '/resume' },
+interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
+  {
+    label: 'Overview',
+    items: [
+      { icon: LayoutDashboard, label: 'Dashboard',       path: '/' },
+      { icon: History,         label: 'Interview History', path: '/history' },
+    ],
+  },
+  {
+    label: 'Practice',
+    items: [
+      { icon: MessageSquare, label: 'Mock Interview',   path: '/interview' },
+      { icon: Building2,     label: 'Company Interview', path: '/company-interview', badge: 'New' },
+      { icon: Zap,           label: 'JD → Interview',  path: '/jd-interview', badge: 'New' },
+    ],
+  },
+  {
+    label: 'Tools',
+    items: [
+      { icon: FileText, label: 'Resume Analyzer', path: '/resume' },
+    ],
+  },
 ];
 
 const SidebarNavItem: React.FC<{
@@ -105,14 +127,21 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto pb-4">
-          {navItems.map((item) => (
-            <SidebarNavItem
-              key={item.path}
-              item={item}
-              active={isActive(item.path)}
-              onClick={() => go(item.path)}
-            />
+        <nav className="flex-1 px-3 overflow-y-auto pb-4 space-y-4">
+          {navSections.map((section) => (
+            <div key={section.label}>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 px-2 mb-1">{section.label}</p>
+              <div className="space-y-0.5">
+                {section.items.map((item) => (
+                  <SidebarNavItem
+                    key={item.path}
+                    item={item}
+                    active={isActive(item.path)}
+                    onClick={() => go(item.path)}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

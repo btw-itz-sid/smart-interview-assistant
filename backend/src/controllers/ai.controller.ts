@@ -5,6 +5,7 @@
 
 import { Response } from 'express';
 import * as interviewService from '../services/interview.service';
+import * as aiService from '../services/ai.service';
 import {
   generateQuestionSchema,
   evaluateAnswerSchema,
@@ -106,5 +107,39 @@ export const getInterviewDetail = asyncHandler(
     );
 
     sendResponse(res, 200, 'Interview detail mil gayi', detail);
+  }
+);
+
+// ============================================
+// POST /api/ai/company-interview - Company-specific interview generate karo
+// ============================================
+export const companyInterview = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const { company, role, difficulty = 'medium', count = 5 } = req.body;
+
+    if (!company || !role) {
+      return sendResponse(res, 400, 'Company aur role dono required hain', null);
+    }
+
+    logger.info(`Company interview request - ${company} / ${role}`);
+    const result = await aiService.generateCompanyInterview(company, role, difficulty, count);
+    sendResponse(res, 200, 'Company interview ready hai!', result);
+  }
+);
+
+// ============================================
+// POST /api/ai/jd-interview - JD se custom interview generate karo
+// ============================================
+export const jdInterview = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const { jobDescription, count = 5 } = req.body;
+
+    if (!jobDescription || jobDescription.trim().length < 50) {
+      return sendResponse(res, 400, 'Valid job description do (min 50 characters)', null);
+    }
+
+    logger.info('JD interview request aayi');
+    const result = await aiService.generateJDInterview(jobDescription, count);
+    sendResponse(res, 200, 'JD-based interview ready hai!', result);
   }
 );

@@ -7,7 +7,7 @@ import { Router } from 'express';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { validateBody } from '../middlewares/validate.middleware';
 import { resumeAnalyzeSchema } from '../models/validation';
-import { analyzeResume, suggestTopics, uploadResume, generateResume } from '../controllers/resume.controller';
+import { analyzeResume, suggestTopics, uploadResume, generateResume, advancedATSScore } from '../controllers/resume.controller';
 import multer from 'multer';
 
 // Set up memory storage for PDF parsing
@@ -33,5 +33,8 @@ router.post('/upload', upload.single('resume'), uploadResume);
 
 // POST /api/resume/generate - Auto generate baseline resume
 router.post('/generate', generateResume);
+
+// POST /api/resume/ats-score - Advanced 5-dimension ATS score
+router.post('/ats-score', advancedATSScore);
 
 export default router;

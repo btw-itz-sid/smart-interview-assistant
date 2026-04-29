@@ -14,6 +14,7 @@ import authRoutes from './routes/auth.routes';
 import aiRoutes from './routes/ai.routes';
 import progressRoutes from './routes/progress.routes';
 import resumeRoutes from './routes/resume.routes';
+import interviewRoutes from './routes/interview.routes';
 
 // Middlewares import karo
 import { errorHandler } from './middlewares/error.middleware';
@@ -110,6 +111,9 @@ app.use('/api/auth', authRoutes);
 
 // AI Mock Interview routes - /api/ai/*
 app.use('/api/ai', aiRoutes);
+
+// Interview session routes - /api/interview/*
+app.use('/api/interview', interviewRoutes);
 
 // Progress & Analytics routes - /api/progress/*
 app.use('/api/progress', progressRoutes);

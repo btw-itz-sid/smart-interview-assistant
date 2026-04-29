@@ -13,6 +13,8 @@ import {
   evaluateAnswer,
   getChatHistory,
   getInterviewDetail,
+  companyInterview,
+  jdInterview,
 } from '../controllers/ai.controller';
 
 const router = Router();
@@ -31,5 +33,11 @@ router.get('/chat-history', cacheMiddleware(300), getChatHistory);
 
 // GET /api/ai/interview/:id - Specific interview ki detail
 router.get('/interview/:id', getInterviewDetail);
+
+// POST /api/ai/company-interview - Company-specific interview generate karo
+router.post('/company-interview', companyInterview);
+
+// POST /api/ai/jd-interview - JD se custom interview generate karo
+router.post('/jd-interview', jdInterview);
 
 export default router;

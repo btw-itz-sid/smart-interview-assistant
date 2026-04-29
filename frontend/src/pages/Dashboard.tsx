@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
+} from 'recharts';
+import {
   Play,
   TrendingUp,
   Award,
@@ -12,6 +15,9 @@ import {
   BarChart2,
   Flame,
   ArrowUpRight,
+  Zap,
+  Building2,
+  FileText,
 } from 'lucide-react';
 
 /* ── Metric Card — clean flat design, no glow ── */
@@ -247,8 +253,24 @@ export default function Dashboard() {
                 onClick={() => navigate('/interview')}
               />
               <ActionCard
+                title="Company Interview"
+                desc="Google, Amazon, TCS & more"
+                icon={Building2}
+                iconBg="bg-purple-50"
+                iconColor="text-purple-600"
+                onClick={() => navigate('/company-interview')}
+              />
+              <ActionCard
+                title="JD → Interview"
+                desc="Paste JD, get custom questions"
+                icon={FileText}
+                iconBg="bg-rose-50"
+                iconColor="text-rose-600"
+                onClick={() => navigate('/jd-interview')}
+              />
+              <ActionCard
                 title="Analyze Resume"
-                desc="Get ATS score & tips"
+                desc="5-dimension ATS score"
                 icon={Presentation}
                 iconBg="bg-emerald-50"
                 iconColor="text-emerald-600"
@@ -264,8 +286,59 @@ export default function Dashboard() {
               />
             </div>
           </div>
+
+          {/* Daily Practice Recommendation */}
+          {topics.length > 0 && (() => {
+            const weakest = [...topics].sort((a: any, b: any) => a.avgScore - b.avgScore)[0];
+            return (
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-4 animate-slide-up" style={{ animationDelay: '480ms' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="w-4 h-4 text-indigo-500" />
+                  <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Daily Suggestion</p>
+                </div>
+                <p className="text-sm text-indigo-900 font-medium leading-snug">
+                  Practice <span className="font-bold">{weakest.topic}</span> today
+                </p>
+                <p className="text-xs text-indigo-600 mt-0.5 mb-3">Your lowest score: {weakest.avgScore}/10</p>
+                <button onClick={() => navigate('/interview')} className="w-full text-xs font-semibold text-indigo-700 bg-white border border-indigo-200 py-2 rounded-lg hover:bg-indigo-50 transition-colors">
+                  Start Practice →
+                </button>
+              </div>
+            );
+          })()}
         </div>
       </div>
+
+      {/* ── Score Trend Chart ── */}
+      {recent.length >= 2 && (
+        <div className="bg-white rounded-xl border border-slate-200 p-6 animate-slide-up mb-6" style={{ animationDelay: '520ms' }}>
+          <div className="flex items-center gap-2 mb-5">
+            <TrendingUp className="w-4 h-4 text-indigo-500" />
+            <h2 className="text-base font-semibold text-slate-800" style={{ fontFamily: 'Outfit, sans-serif' }}>
+              Score Trend
+            </h2>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={[...recent].reverse().slice(0, 10).map((r: any, i: number) => ({
+              session: `#${i + 1}`,
+              score: r.score ?? 0,
+              topic: r.topic,
+            }))}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="session" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={24} />
+              <Tooltip
+                contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px' }}
+                formatter={(val: any, _: any, props: any) => [`${val}/10`, props.payload.topic || 'Score']}
+                labelStyle={{ color: '#64748b', fontWeight: 600 }}
+              />
+              <Line type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5}
+                dot={{ r: 4, fill: '#6366f1', strokeWidth: 0 }}
+                activeDot={{ r: 6, fill: '#6366f1', strokeWidth: 0 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* ── Recent Sessions ── */}
       <div className="bg-white rounded-xl border border-slate-200 p-6 animate-slide-up" style={{ animationDelay: '480ms' }}>
