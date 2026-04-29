@@ -27,7 +27,7 @@ export const analyzeResume = asyncHandler(
     // Resume service se analysis karo
     const result = await resumeService.analyzeResume(resumeText, jobRole);
 
-    sendResponse(res, 200, 'Resume analyze ho gaya! 📄', result);
+    sendResponse(res, 200, 'Resume analyzed successfully.', result);
   }
 );
 
@@ -43,7 +43,7 @@ export const suggestTopics = asyncHandler(
 
     const topics = await resumeService.suggestInterviewTopics(resumeText, jobRole);
 
-    sendResponse(res, 200, 'Interview topics suggest ho gaye! 🎯', { topics });
+    sendResponse(res, 200, 'Interview topics suggested.', { topics });
   }
 );
 
@@ -86,7 +86,7 @@ export const generateResume = asyncHandler(
     const userId = (req.user as any).userId || (req.user as any).id;
     const generatedResume = await resumeService.generateNewResume(userId);
 
-    sendResponse(res, 200, 'Resume successfully generated! 🎉', { resume: generatedResume });
+    sendResponse(res, 200, 'Resume generated successfully.', { resume: generatedResume });
   }
 );
 

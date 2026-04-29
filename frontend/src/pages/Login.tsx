@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Shield, BarChart2, BrainCircuit } from 'lucide-react';
 import AppLogo from '../components/AppLogo';
 
 export default function Login() {
@@ -59,20 +59,23 @@ export default function Login() {
             Practice with real-world questions, get instant AI feedback, and track your progress over time.
           </p>
 
-          {/* Testimonial */}
-          <div className="mt-10 bg-white/5 border border-white/10 rounded-2xl p-5 max-w-xs">
-            <p className="text-slate-300 text-sm leading-relaxed italic">
-              "Went from bombing my interviews to landing 3 offers in a month. This tool is insane."
-            </p>
-            <div className="flex items-center gap-3 mt-4">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-300 to-violet-400 flex items-center justify-center text-white text-xs font-bold">
-                RA
+          {/* Feature highlights instead of fake testimonial */}
+          <div className="mt-8 space-y-4">
+            {[
+              { icon: BrainCircuit, title: 'AI-Powered Questions', desc: 'Tailored to your topic and difficulty level' },
+              { icon: BarChart2, title: 'Track Your Growth', desc: 'Score trends and topic-wise analytics' },
+              { icon: Shield, title: 'ATS Resume Analysis', desc: '5-dimension scoring with actionable tips' },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/[0.06] border border-white/[0.06] flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-indigo-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">{title}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-white text-xs font-semibold">Rahul Agarwal</p>
-                <p className="text-slate-500 text-[11px]">SWE @ Google</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
@@ -103,7 +106,7 @@ export default function Login() {
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-5 flex items-start gap-2">
-              <span className="mt-0.5 shrink-0">⚠️</span>
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}

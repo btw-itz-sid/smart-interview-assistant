@@ -23,9 +23,9 @@ const startServer = async (): Promise<void> => {
 
   // Step 3: Express server start karo
   const server = app.listen(config.port, () => {
-    logger.info(`🚀 Server chal raha hai port ${config.port} pe!`);
-    logger.info(`📍 Health Check: http://localhost:${config.port}/api/health`);
-    logger.info(`🌍 Environment: ${config.nodeEnv}`);
+    logger.info(`Server running on port ${config.port}`);
+    logger.info(`Health Check: http://localhost:${config.port}/api/health`);
+    logger.info(`Environment: ${config.nodeEnv}`);
     logger.info('==========================================');
     logger.info('Available API Endpoints:');
     logger.info('  POST   /api/auth/register');
@@ -53,7 +53,7 @@ const startServer = async (): Promise<void> => {
     server.close(async () => {
       // Database connection band karo
       await disconnectDatabase();
-      logger.info('Server gracefully band ho gaya ✅');
+      logger.info('Server gracefully shut down.');
       process.exit(0);
     });
 

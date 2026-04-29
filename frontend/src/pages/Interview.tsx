@@ -8,6 +8,10 @@ import {
   Zap,
   Target,
   ChevronRight,
+  AlertCircle,
+  ListChecks,
+  Bot,
+  Timer,
 } from 'lucide-react';
 
 const TOPICS = [
@@ -82,7 +86,7 @@ export default function Interview() {
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm flex items-start gap-2">
-              <span className="shrink-0 mt-0.5">⚠️</span>
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -179,12 +183,12 @@ export default function Interview() {
         {/* Info chips */}
         <div className="flex items-center justify-center gap-6 mt-5">
           {[
-            { label: '3 Questions', icon: '📋' },
-            { label: 'AI Evaluation', icon: '🤖' },
-            { label: 'Instant Score', icon: '⚡' },
+            { label: '3 Questions', icon: ListChecks },
+            { label: 'AI Evaluation', icon: Bot },
+            { label: 'Instant Score', icon: Timer },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-1.5 text-xs text-slate-400">
-              <span>{item.icon}</span>
+              <item.icon className="w-3.5 h-3.5" />
               <span>{item.label}</span>
             </div>
           ))}

@@ -74,7 +74,7 @@ app.use(
   '/api/docs',
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec, {
-    customSiteTitle: '🎯 Smart Interview API Docs',
+    customSiteTitle: 'Smart Interview API Docs',
     customCss: `
       .swagger-ui .topbar { background-color: #1a1a2e; }
       .swagger-ui .topbar .download-url-wrapper { display: none; }
@@ -99,7 +99,7 @@ app.get('/api/docs.json', (_req: Request, res: Response) => {
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     success: true,
-    message: 'Server chal raha hai! 🚀',
+    message: 'Server is running.',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     docs: 'http://localhost:5000/api/docs',

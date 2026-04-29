@@ -43,11 +43,11 @@ export const validateEnv = (): void => {
 
   for (const varName of requiredVars) {
     if (!process.env[varName]) {
-      console.warn(`⚠️  Warning: ${varName} environment variable set nahi hai!`);
+      console.warn(`Warning: ${varName} environment variable is not set.`);
     }
   }
 
   if (!process.env.OPENAI_API_KEY) {
-    console.warn('⚠️  OPENAI_API_KEY set nahi hai. AI features kaam nahi karenge.');
+    console.warn('OPENAI_API_KEY is not set. AI features will not work.');
   }
 };

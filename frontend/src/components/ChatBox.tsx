@@ -23,7 +23,7 @@ export default function ChatBox({
   useEffect(() => {
     if (questions.length > 0) {
       setMessages([
-        { role: 'system', content: `Interview started on **${topic}**. Good luck! 🎯` },
+        { role: 'system', content: `Interview started on **${topic}**. Good luck!` },
         { role: 'ai', content: questions[0].question },
       ]);
     }
@@ -64,12 +64,12 @@ export default function ChatBox({
         setTimeout(() => {
           setMessages(prev => [...prev, {
             role: 'system',
-            content: '✅ Interview complete! Great effort. Check your dashboard for updated progress.',
+            content: 'Interview complete! Great effort. Check your dashboard for updated progress.',
           }]);
         }, 1200);
       }
     } catch {
-      setMessages(prev => [...prev, { role: 'system', content: '❌ Network error while evaluating. Please try again.' }]);
+      setMessages(prev => [...prev, { role: 'system', content: 'Network error while evaluating. Please try again.' }]);
     } finally {
       setEvaluating(false);
     }

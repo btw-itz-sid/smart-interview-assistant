@@ -10,17 +10,17 @@ const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: '🎯 Smart Interview Assistant API',
+      title: 'Smart Interview Assistant API',
       version: '1.0.0',
       description: `
 ## AI-Powered Interview Preparation Backend
 
-Yeh API tumhare interview preparation ko next level pe le jaati hai:
+Full-stack API for intelligent interview preparation:
 
-- 🤖 **AI Mock Interviews** - Topic per AI se questions lao aur answers evaluate karwao
-- 📊 **Progress Tracking** - Apna performance over time track karo
-- 📄 **Resume Analyzer** - AI se resume ka feedback lo
-- 🔐 **JWT Auth** - Secure authentication
+- **AI Mock Interviews** — Generate topic-specific questions and evaluate answers with AI
+- **Progress Tracking** — Track performance analytics over time
+- **Resume Analyzer** — Get ATS score, keyword analysis, and improvement suggestions
+- **JWT Auth** — Secure token-based authentication
 
 ### Authentication
 Sabhi protected routes ke liye \`Authorization: Bearer <token>\` header chahiye.
@@ -145,11 +145,11 @@ Token login/register endpoint se milta hai.
       },
     },
     tags: [
-      { name: 'Health', description: '✅ Server status check' },
-      { name: 'Auth', description: '🔐 User registration, login, profile' },
-      { name: 'AI Interview', description: '🤖 Mock interview generation and evaluation' },
-      { name: 'Progress', description: '📊 User performance analytics' },
-      { name: 'Resume', description: '📄 Resume analysis and suggestions' },
+      { name: 'Health', description: 'Server status check' },
+      { name: 'Auth', description: 'User registration, login, and profile' },
+      { name: 'AI Interview', description: 'Mock interview generation and evaluation' },
+      { name: 'Progress', description: 'User performance analytics' },
+      { name: 'Resume', description: 'Resume analysis and suggestions' },
     ],
     paths: {
       '/api/health': {
@@ -158,7 +158,7 @@ Token login/register endpoint se milta hai.
           summary: 'Server health check',
           description: 'Check karo ki server live hai ya nahi',
           responses: {
-            200: { description: 'Server is running ✅' },
+            200: { description: 'Server is running' },
           },
         },
       },
@@ -172,7 +172,7 @@ Token login/register endpoint se milta hai.
             content: { 'application/json': { schema: { $ref: '#/components/schemas/RegisterRequest' } } },
           },
           responses: {
-            201: { description: 'Registration successful ✅', content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthResponse' } } } },
+            201: { description: 'Registration successful', content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthResponse' } } } },
             400: { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
           },
         },
@@ -187,7 +187,7 @@ Token login/register endpoint se milta hai.
             content: { 'application/json': { schema: { $ref: '#/components/schemas/LoginRequest' } } },
           },
           responses: {
-            200: { description: 'Login successful ✅', content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthResponse' } } } },
+            200: { description: 'Login successful', content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthResponse' } } } },
             401: { description: 'Wrong credentials', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
           },
         },
@@ -199,7 +199,7 @@ Token login/register endpoint se milta hai.
           description: 'Logged in user ki profile dekho',
           security: [{ bearerAuth: [] }],
           responses: {
-            200: { description: 'Profile data ✅' },
+            200: { description: 'Profile data retrieved' },
             401: { description: 'Unauthorized - Login required' },
           },
         },
@@ -215,7 +215,7 @@ Token login/register endpoint se milta hai.
             content: { 'application/json': { schema: { $ref: '#/components/schemas/GenerateQuestionsRequest' } } },
           },
           responses: {
-            201: { description: 'Questions generated ✅' },
+            201: { description: 'Questions generated' },
             401: { description: 'Unauthorized' },
             400: { description: 'Validation error' },
           },
@@ -232,7 +232,7 @@ Token login/register endpoint se milta hai.
             content: { 'application/json': { schema: { $ref: '#/components/schemas/EvaluateAnswerRequest' } } },
           },
           responses: {
-            200: { description: 'Answer evaluated ✅' },
+            200: { description: 'Answer evaluated' },
             401: { description: 'Unauthorized' },
             403: { description: 'This interview does not belong to you' },
             404: { description: 'Interview not found' },
@@ -246,7 +246,7 @@ Token login/register endpoint se milta hai.
           description: 'Apni saari past interviews aur unke Q&A dekho',
           security: [{ bearerAuth: [] }],
           responses: {
-            200: { description: 'History retrieved ✅' },
+            200: { description: 'History retrieved' },
             401: { description: 'Unauthorized' },
           },
         },
@@ -261,7 +261,7 @@ Token login/register endpoint se milta hai.
             { in: 'path', name: 'id', required: true, schema: { type: 'integer' }, description: 'Interview ID' },
           ],
           responses: {
-            200: { description: 'Interview detail ✅' },
+            200: { description: 'Interview detail retrieved' },
             404: { description: 'Interview not found' },
           },
         },
@@ -273,7 +273,7 @@ Token login/register endpoint se milta hai.
           description: 'Saari performance analytics - total interviews, avg score, topic-wise breakdown',
           security: [{ bearerAuth: [] }],
           responses: {
-            200: { description: 'Analytics data ✅' },
+            200: { description: 'Analytics data retrieved' },
             401: { description: 'Unauthorized' },
           },
         },
@@ -285,7 +285,7 @@ Token login/register endpoint se milta hai.
           description: 'Har topic pe kitne interviews diye aur kitna score aaya',
           security: [{ bearerAuth: [] }],
           responses: {
-            200: { description: 'Topic progress ✅' },
+            200: { description: 'Topic progress retrieved' },
             401: { description: 'Unauthorized' },
           },
         },
@@ -301,7 +301,7 @@ Token login/register endpoint se milta hai.
             content: { 'application/json': { schema: { $ref: '#/components/schemas/ResumeAnalyzeRequest' } } },
           },
           responses: {
-            200: { description: 'Resume analyzed ✅' },
+            200: { description: 'Resume analyzed' },
             400: { description: 'Validation error' },
             401: { description: 'Unauthorized' },
           },
@@ -318,7 +318,7 @@ Token login/register endpoint se milta hai.
             content: { 'application/json': { schema: { $ref: '#/components/schemas/ResumeAnalyzeRequest' } } },
           },
           responses: {
-            200: { description: 'Topics suggested ✅' },
+            200: { description: 'Topics suggested' },
             401: { description: 'Unauthorized' },
           },
         },

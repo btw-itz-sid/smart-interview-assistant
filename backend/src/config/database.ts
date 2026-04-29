@@ -28,12 +28,12 @@ if (process.env.NODE_ENV !== 'production') {
 export const connectDatabase = async (): Promise<void> => {
   try {
     await prisma.$connect();
-    logger.info('✅ Database se connection successful ho gaya!');
+    logger.info('Database connection successful.');
   } catch (error) {
-    logger.error('❌ Database connection fail ho gaya!', error);
+    logger.error('Database connection failed.', error);
     // Agar database connect nahi hua toh bhi app chalegi
     // Bas database wale features kaam nahi karenge
-    logger.warn('⚠️  App bina database ke chal rahi hai - kuch features kaam nahi karenge');
+    logger.warn('App running without database - some features may not work.');
   }
 };
 

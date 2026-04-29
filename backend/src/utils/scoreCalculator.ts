@@ -44,12 +44,12 @@ export const getScoreGrade = (score: number): string => {
 // Score ke basis pe feedback message
 // ============================================
 export const getScoreFeedback = (score: number): string => {
-  if (score >= 9) return 'Outstanding! 🌟 Bahut badhiya performance hai';
-  if (score >= 8) return 'Excellent! 🎉 Aap interview ke liye ready hain';
-  if (score >= 7) return 'Good job! 👍 Thodi aur practice karo';
-  if (score >= 5) return 'Average 📚 Concepts ko aur better karo';
-  if (score >= 3) return 'Needs work 💪 Zyada practice karo - ho jaayega!';
-  return 'Keep trying! 🔁 Fundamentals se shuru karo';
+  if (score >= 9) return 'Outstanding performance — you are well-prepared.';
+  if (score >= 8) return 'Excellent work — you are interview-ready.';
+  if (score >= 7) return 'Good job — a bit more practice will solidify your skills.';
+  if (score >= 5) return 'Average — revisit the core concepts and practice more.';
+  if (score >= 3) return 'Needs improvement — increase your practice frequency.';
+  return 'Keep going — start with fundamentals and build up.';
 };
 
 // ============================================
