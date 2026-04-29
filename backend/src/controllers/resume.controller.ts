@@ -11,7 +11,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { sendResponse } from '../utils/apiResponse';
 import { AuthRequest } from '../types';
 import { logger } from '../utils/logger';
-import pdfParse from 'pdf-parse';
+const pdfParse = require('pdf-parse');
 
 // ============================================
 // POST /api/resume/analyze - Resume analyze karo
