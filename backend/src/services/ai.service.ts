@@ -35,18 +35,21 @@ export const generateInterviewQuestions = async (
       messages: [
         {
           role: 'system',
-          content: `You are an expert technical interviewer. Generate exactly ${count} interview questions on the given topic.
+          content: `You are an elite Staff-level technical interviewer at a top-tier tech company (FAANG). Generate exactly ${count} highly complex, non-repetitive interview questions on the given topic.
           
 Rules:
 - Difficulty level: ${difficulty}
-- Questions should be clear and specific
-- Mix of theoretical and practical questions
-- Return ONLY a JSON array of strings, no extra text
-- Example format: ["Question 1?", "Question 2?", "Question 3?"]`,
+- ABSOLUTELY NO generic, theoretical, or textbook questions (e.g., "What is X?", "Explain Y").
+- EVERY question MUST be a real-world, scenario-based problem involving architecture, debugging, trade-offs, or scaling.
+- Frame questions indirectly or with a 'twist'. Tough interviewers often disguise simple concepts inside complex, confusing real-world scenarios to see if you actually understand the core mechanics rather than just memorized definitions.
+- Ensure questions are exceptionally tough, tricky, and test the candidate's actual battle-tested experience.
+- Do not repeat question patterns.
+- Return ONLY a JSON array of strings, no extra text.
+- Example format: ["Scenario: You have a microservice that...", "How would you design..."]`,
         },
         {
           role: 'user',
-          content: `Generate ${count} ${difficulty} level interview questions on: ${topic}`,
+          content: `Generate ${count} extremely rigorous, real-world ${difficulty} level interview questions on: ${topic}. Make them complex enough to truly test a senior engineer's capabilities.`,
         },
       ],
       temperature: 0.7, // Thoda creative but consistent
@@ -334,21 +337,22 @@ export const generateCompanyInterview = async (
       messages: [
         {
           role: 'system',
-          content: `You are an expert interview coach who knows the interview styles of top companies.
+          content: `You are an elite Principal Interviewer who intimately knows the exact, recent interview styles and specific bar-raiser questions of top companies.
 
-Generate a company-specific interview for the given company and role.
+Generate a highly authentic, rigorous company-specific interview for the given company and role.
 
 Return a JSON object with:
-1. "questions": Array of exactly ${count} interview questions (mix of technical, behavioral, and culture-fit) that this specific company is known to ask
-2. "tips": Array of 3-4 company-specific tips (e.g., "Amazon focuses on Leadership Principles", "Google values problem-solving approach over just the answer")
-3. "companyInfo": A 1-sentence description of this company's interview style
+1. "questions": Array of exactly ${count} authentic, exceptionally tough, non-repetitive interview questions that this specific company ACTUALLY asks. Include deep architectural design, complex problem-solving, and their unique behavioral frameworks. 
+    - CRITICAL: Frame technical questions indirectly or with a twist. Make them sound like a real Senior Engineer is pressing the candidate with a confusing edge-case scenario. NO generic textbook questions.
+2. "tips": Array of 3-4 highly specific, insider tips for passing this company's interview loop.
+3. "companyInfo": A 1-sentence description of this company's rigorous interview culture.
 
-Difficulty: ${difficulty}
+Difficulty: ${difficulty} (Make it realistically difficult for this company)
 Return ONLY valid JSON.`,
         },
         {
           role: 'user',
-          content: `Company: ${company}\nRole: ${role}\nGenerate ${count} interview questions for this position.`,
+          content: `Company: ${company}\nRole: ${role}\nGenerate ${count} complex, real-world interview questions exactly as they would be asked in a real ${company} onsite loop.`,
         },
       ],
       temperature: 0.6,
@@ -403,21 +407,23 @@ export const generateJDInterview = async (
       messages: [
         {
           role: 'system',
-          content: `You are an expert technical recruiter. Analyze the job description and generate a targeted interview.
+          content: `You are a strict, highly technical Engineering Manager analyzing a job description to conduct a grueling, highly specific technical interview.
 
 Return a JSON object with:
-1. "roleTitle": Extracted job title from the JD
-2. "extractedSkills": Array of 5-8 key skills/technologies extracted from the JD
-3. "difficulty": Estimated difficulty level ("easy", "medium", or "hard") based on requirements
-4. "questions": Array of exactly ${count} interview questions highly specific to the JD's requirements
-   - Mix: 60% technical (based on listed skills), 40% behavioral/situational
-   - Questions should directly reference technologies/requirements from the JD
+1. "roleTitle": Extracted exact job title from the JD
+2. "extractedSkills": Array of 5-8 highly specific niche skills/technologies from the JD
+3. "difficulty": Estimated difficulty level ("easy", "medium", or "hard") based on the JD depth
+4. "questions": Array of exactly ${count} exceptionally tough, real-world scenario questions that STRICTLY combine multiple technologies mentioned in the JD.
+    - ABSOLUTELY NO generic theoretical questions. Every question must test the intersection of the JD's requirements under pressure.
+    - CRITICAL: Frame the questions with a 'twist' or indirectly. Make them sound like a grueling technical deep-dive where the interviewer is testing if the candidate actually solved scaling/debugging problems in production, rather than just reading documentation.
+    - 80% complex, twisted technical scenarios, 20% high-stakes behavioral/situational questions.
+    - Do not repeat question formats.
 
 Return ONLY valid JSON.`,
         },
         {
           role: 'user',
-          content: `Job Description:\n${jobDescription}\n\nGenerate ${count} targeted interview questions.`,
+          content: `Job Description:\n${jobDescription}\n\nGenerate ${count} highly complex, non-repetitive scenario-based interview questions directly testing the intersections of these requirements.`,
         },
       ],
       temperature: 0.4,
