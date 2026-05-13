@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Backend ka base URL
-export const API_URL = 'http://localhost:5000/api';
+// Backend base URL — uses env var for production, localhost fallback for dev
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Axios instance create karo with default settings
 export const api = axios.create({

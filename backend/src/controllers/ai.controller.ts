@@ -1,6 +1,6 @@
 // ============================================
-// AI Controller - Mock Interview ke request handlers
-// Interview start karna, answer submit karna, history dekhna
+// AI Controller — Mock Interview request handlers
+// Interview start, answer submit, hints, behavioral mode, history
 // ============================================
 
 import { Response } from 'express';
@@ -16,20 +16,14 @@ import { AuthRequest } from '../types';
 import { logger } from '../utils/logger';
 
 // ============================================
-// POST /api/ai/generate-questions - Interview start karo
-// AI se questions generate hoke aayenge
+// POST /api/ai/generate-questions — Start a mock interview
 // ============================================
 export const generateQuestions = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    logger.info('Interview question generation request aayi');
-
-    // Step 1: Input validate karo
+    logger.info('Interview question generation request received');
     const validatedData = generateQuestionSchema.parse(req.body);
-
-    // Step 2: User ID nikalo token se
     const userId = req.user!.userId;
 
-    // Step 3: Interview service se questions generate karo
     const result = await interviewService.startInterview(
       userId,
       validatedData.topic,
@@ -37,26 +31,19 @@ export const generateQuestions = asyncHandler(
       validatedData.count
     );
 
-    // Step 4: Response bhejo questions ke saath
-    sendResponse(res, 201, 'Interview questions generate ho gaye!', result);
+    sendResponse(res, 201, 'Interview questions generated successfully!', result);
   }
 );
 
 // ============================================
-// POST /api/ai/evaluate-answer - Answer submit karo evaluation ke liye
-// AI answer check karke score aur feedback dega
+// POST /api/ai/evaluate-answer — Submit and evaluate an answer
 // ============================================
 export const evaluateAnswer = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    logger.info('Answer evaluation request aayi');
-
-    // Step 1: Input validate karo
+    logger.info('Answer evaluation request received');
     const validatedData = evaluateAnswerSchema.parse(req.body);
-
-    // Step 2: User ID nikalo
     const userId = req.user!.userId;
 
-    // Step 3: Interview service se answer evaluate karvao
     const result = await interviewService.submitAnswer(
       userId,
       validatedData.questionId,
@@ -66,80 +53,124 @@ export const evaluateAnswer = asyncHandler(
       validatedData.topic
     );
 
-    // Step 4: Evaluation result bhejo
-    sendResponse(res, 200, 'Answer evaluate ho gaya!', result);
+    sendResponse(res, 200, 'Answer evaluated successfully!', result);
   }
 );
 
 // ============================================
-// GET /api/ai/chat-history - Saari interview history nikalo
-// Pichle saare interviews aur unke Q&A dikhata hai
+// GET /api/ai/chat-history — All past interview sessions
 // ============================================
 export const getChatHistory = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    logger.info('Chat history request aayi');
-
+    logger.info('Chat history request received');
     const userId = req.user!.userId;
+    const { topic, page = '1', limit = '20' } = req.query as any;
 
-    const history = await interviewService.getChatHistory(userId);
+    const history = await interviewService.getChatHistory(userId, {
+      topic,
+      page: parseInt(page),
+      limit: parseInt(limit),
+    });
 
-    sendResponse(res, 200, 'Chat history mil gayi', history);
+    sendResponse(res, 200, 'Chat history retrieved', history);
   }
 );
 
 // ============================================
-// GET /api/ai/interview/:id - Specific interview ki detail
+// GET /api/ai/interview/:id — Specific interview detail
 // ============================================
 export const getInterviewDetail = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    logger.info('Interview detail request aayi');
-
+    logger.info('Interview detail request received');
     const userId = req.user!.userId;
     const interviewId = parseInt(req.params.id, 10);
 
     if (isNaN(interviewId)) {
-      throw new Error('Interview ID valid number honi chahiye');
+      throw new Error('Interview ID must be a valid number');
     }
 
-    const detail = await interviewService.getInterviewDetail(
-      userId,
-      interviewId
-    );
-
-    sendResponse(res, 200, 'Interview detail mil gayi', detail);
+    const detail = await interviewService.getInterviewDetail(userId, interviewId);
+    sendResponse(res, 200, 'Interview detail retrieved', detail);
   }
 );
 
 // ============================================
-// POST /api/ai/company-interview - Company-specific interview generate karo
+// POST /api/ai/company-interview — Company-specific interview
 // ============================================
 export const companyInterview = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const { company, role, difficulty = 'medium', count = 5 } = req.body;
 
     if (!company || !role) {
-      return sendResponse(res, 400, 'Company aur role dono required hain', null);
+      return sendResponse(res, 400, 'Company and role are both required', null);
     }
 
-    logger.info(`Company interview request - ${company} / ${role}`);
+    logger.info(`Company interview request — ${company} / ${role}`);
     const result = await aiService.generateCompanyInterview(company, role, difficulty, count);
-    sendResponse(res, 200, 'Company interview ready hai!', result);
+    sendResponse(res, 200, 'Company interview is ready!', result);
   }
 );
 
 // ============================================
-// POST /api/ai/jd-interview - JD se custom interview generate karo
+// POST /api/ai/jd-interview — JD-to-Interview pipeline
 // ============================================
 export const jdInterview = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const { jobDescription, count = 5 } = req.body;
 
     if (!jobDescription || jobDescription.trim().length < 50) {
-      return sendResponse(res, 400, 'Valid job description do (min 50 characters)', null);
+      return sendResponse(res, 400, 'Please provide a valid job description (min 50 characters)', null);
     }
 
-    logger.info('JD interview request aayi');
+    logger.info('JD interview request received');
     const result = await aiService.generateJDInterview(jobDescription, count);
-    sendResponse(res, 200, 'JD-based interview ready hai!', result);
+    sendResponse(res, 200, 'JD-based interview is ready!', result);
+  }
+);
+
+// ============================================
+// POST /api/ai/hint — Get a real-time hint during interview
+// ============================================
+export const getHint = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const { question, partialAnswer, topic } = req.body;
+
+    if (!question || !topic) {
+      return sendResponse(res, 400, 'Question and topic are required', null);
+    }
+
+    logger.info('Interview hint request received');
+    const result = await aiService.getInterviewHint(question, partialAnswer || '', topic);
+    sendResponse(res, 200, 'Hint generated', result);
+  }
+);
+
+// ============================================
+// POST /api/ai/behavioral — Behavioral STAR-L interview
+// ============================================
+export const behavioralInterview = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const { focusArea = 'general', count = 4 } = req.body;
+
+    logger.info(`Behavioral interview request — Focus: ${focusArea}`);
+    const result = await aiService.generateBehavioralInterview(focusArea, count);
+    sendResponse(res, 200, 'Behavioral interview is ready!', result);
+  }
+);
+
+// ============================================
+// POST /api/ai/behavioral/evaluate — Evaluate behavioral answer
+// ============================================
+export const evaluateBehavioral = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const { question, answer } = req.body;
+
+    if (!question || !answer) {
+      return sendResponse(res, 400, 'Question and answer are required', null);
+    }
+
+    logger.info('Behavioral evaluation request received');
+    const result = await aiService.evaluateBehavioralAnswer(question, answer);
+    sendResponse(res, 200, 'Behavioral answer evaluated!', result);
   }
 );

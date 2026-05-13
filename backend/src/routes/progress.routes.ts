@@ -1,7 +1,6 @@
 // ============================================
-// Progress Routes - Analytics aur progress ke endpoints
-// /api/progress/* pe accessible hain
-// Saare routes protected hain
+// Progress Routes — Analytics, streaks, badges, readiness
+// /api/progress/* — All routes protected
 // ============================================
 
 import { Router } from 'express';
@@ -11,22 +10,21 @@ import { cacheMiddleware } from '../middlewares/cache.middleware';
 
 const router = Router();
 
-// Saare progress routes pe auth zaroori hai
 router.use(authMiddleware);
 
-// GET /api/progress/analytics - Complete analytics with caching
-// 60 second ka cache lagaya hai taaki har request pe DB query na ho
-router.get(
-  '/analytics',
-  cacheMiddleware(60),
-  progressController.getAnalytics
-);
+// Dashboard analytics (60s cache)
+router.get('/analytics', cacheMiddleware(60), progressController.getAnalytics);
 
-// GET /api/progress/topics - Topic-wise progress with caching
-router.get(
-  '/topics',
-  cacheMiddleware(60),
-  progressController.getTopicProgress
-);
+// Topic-wise progress (60s cache)
+router.get('/topics', cacheMiddleware(60), progressController.getTopicProgress);
+
+// Streak & XP data
+router.get('/streak', progressController.getStreak);
+
+// Badges (earned + locked)
+router.get('/badges', progressController.getBadges);
+
+// Interview Readiness Score (composite)
+router.get('/readiness', cacheMiddleware(30), progressController.getReadinessScore);
 
 export default router;

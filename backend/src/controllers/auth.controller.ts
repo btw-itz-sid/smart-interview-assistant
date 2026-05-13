@@ -16,7 +16,7 @@ import { logger } from '../utils/logger';
 // Body mein name, email, password chahiye
 // ============================================
 export const register = asyncHandler(async (req: Request, res: Response) => {
-  logger.info('Register request aayi');
+  logger.info('Register request received');
 
   // Step 1: Input validate karo Zod schema se
   const validatedData = registerSchema.parse(req.body);
@@ -25,7 +25,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   const result = await authService.registerUser(validatedData);
 
   // Step 3: Success response bhejo with token
-  sendResponse(res, 201, 'Registration successful ho gayi!', result);
+  sendResponse(res, 201, 'Registration successful!', result);
 });
 
 // ============================================
@@ -33,7 +33,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 // Body mein email aur password chahiye
 // ============================================
 export const login = asyncHandler(async (req: Request, res: Response) => {
-  logger.info('Login request aayi');
+  logger.info('Login request received');
 
   // Step 1: Input validate karo
   const validatedData = loginSchema.parse(req.body);
@@ -51,7 +51,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 // ============================================
 export const getProfile = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    logger.info('Profile request aayi');
+    logger.info('Profile request received');
 
     // req.user auth middleware ne set kiya hai
     const userId = req.user!.userId;

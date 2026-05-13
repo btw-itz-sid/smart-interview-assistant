@@ -1,32 +1,32 @@
-/** Logo — inline SVG so it works without any public/ file dependency */
 export default function AppLogo({ size = 32 }: { size?: number }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 32 32"
+      viewBox="0 0 40 40"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ borderRadius: 8, flexShrink: 0 }}
+      style={{ flexShrink: 0 }}
     >
-      {/* Background */}
-      <rect width="32" height="32" rx="8" fill="#4f46e5" />
-
-      {/* Chat bubble outline */}
+      <defs>
+        <linearGradient id="bgGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#4F46E5" />
+          <stop offset="1" stopColor="#7C3AED" />
+        </linearGradient>
+      </defs>
+      <rect width="40" height="40" rx="12" fill="url(#bgGrad)" />
+      
+      {/* Sleek S curve (Trademark-quality monogram) */}
       <path
-        d="M6 10C6 8.34 7.34 7 9 7H23C24.66 7 26 8.34 26 10V18C26 19.66 24.66 21 23 21H18L14 25V21H9C7.34 21 6 19.66 6 18V10Z"
+        d="M25 15C25 13.3431 23.6569 12 22 12H17C14.2386 12 12 14.2386 12 17C12 19.7614 14.2386 22 17 22H23C24.6569 22 26 23.3431 26 25C26 26.6569 24.6569 28 23 28H15"
         stroke="white"
-        strokeWidth="1.5"
+        strokeWidth="4"
+        strokeLinecap="round"
         strokeLinejoin="round"
-        fill="none"
-        opacity="0.4"
       />
-
-      {/* Lightning bolt */}
-      <path
-        d="M18 7.5L12 16.5H16L14 24.5L20 15.5H16L18 7.5Z"
-        fill="white"
-      />
+      
+      {/* Gold Spark Accent */}
+      <circle cx="26" cy="14" r="2.5" fill="#FBBF24" />
     </svg>
   );
 }

@@ -39,12 +39,17 @@ app.use(
   })
 );
 
-// CORS - Cross-origin requests allow karo (frontend se calls ke liye)
+// CORS — supports FRONTEND_URL env var; multiple origins via comma-separation
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:5174').split(',').map(s => s.trim());
 app.use(
   cors({
-    origin: '*', // Production mein specific origin dena
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) cb(null, true);
+      else cb(null, false);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
   })
 );
 

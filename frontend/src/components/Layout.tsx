@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, MessageSquare, History, FileText, LogOut, User as UserIcon, Menu, X, Building2, Zap } from 'lucide-react';
+import { LogOut, User as UserIcon, Menu, X, LayoutDashboard, History, MessageSquare, Building2, FileText, Zap, BrainCircuit } from 'lucide-react';
 import AppLogo from './AppLogo';
 
 interface NavItem {
@@ -20,16 +20,17 @@ const navSections: NavSection[] = [
   {
     label: 'Overview',
     items: [
-      { icon: LayoutDashboard, label: 'Dashboard',       path: '/' },
+      { icon: LayoutDashboard, label: 'Dashboard',        path: '/' },
       { icon: History,         label: 'Interview History', path: '/history' },
     ],
   },
   {
     label: 'Practice',
     items: [
-      { icon: MessageSquare, label: 'Mock Interview',   path: '/interview' },
-      { icon: Building2,     label: 'Company Interview', path: '/company-interview', badge: 'New' },
-      { icon: Zap,           label: 'JD → Interview',  path: '/jd-interview', badge: 'New' },
+      { icon: MessageSquare, label: 'Mock Interview',    path: '/interview' },
+      { icon: Building2,     label: 'Company Interview',  path: '/company-interview' },
+      { icon: Zap,           label: 'JD Interview',       path: '/jd-interview' },
+      { icon: BrainCircuit,  label: 'Behavioral (STAR)',  path: '/behavioral' },
     ],
   },
   {
@@ -47,16 +48,17 @@ const SidebarNavItem: React.FC<{
 }> = ({ item: { icon: Icon, label, badge }, active, onClick }) => (
   <button
     onClick={onClick}
-    className={`nav-item ${active ? 'active' : ''}`}
+    className={`nav-item group ${active ? 'active' : ''}`}
     style={{
-      borderLeft: active ? '2px solid #6366f1' : '2px solid transparent',
+      borderLeft: active ? '2px solid #818cf8' : '2px solid transparent',
       paddingLeft: active ? '10px' : '12px',
     }}
   >
-    <Icon className={`nav-icon w-4 h-4 flex-shrink-0`} />
-    <span className="flex-1">{label}</span>
+    <Icon className={`w-4 h-4 flex-shrink-0 transition-colors duration-200 ${active ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
+    <span className="flex-1 text-left">{label}</span>
     {badge && (
-      <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400">
+      <span className="ml-auto px-1.5 py-px rounded text-[9px] font-bold tracking-wide uppercase"
+        style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc' }}>
         {badge}
       </span>
     )}
@@ -83,54 +85,56 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f8f9fc]">
+    <div className="flex h-screen overflow-hidden bg-[#f7f8fa]">
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* ── Sidebar ── */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 flex flex-col
-          bg-[#0f1117] border-r border-white/[0.06]
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-[260px] flex flex-col
           transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]
           lg:translate-x-0
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{
+          background: 'linear-gradient(180deg, #0c0e18 0%, #111424 100%)',
+          borderRight: '1px solid rgba(255,255,255,0.04)',
+        }}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between px-5 pt-6 pb-5">
+        <div className="flex items-center justify-between px-5 pt-7 pb-6">
           <div className="flex items-center gap-3">
-            <AppLogo size={32} />
+            <AppLogo size={34} />
             <div>
-              <p className="text-white font-semibold text-sm leading-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
+              <p className="text-white font-semibold text-[14px] leading-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
                 Smart Interview
               </p>
-              <p className="text-[10px] text-indigo-400/80 leading-tight font-medium uppercase tracking-widest">
-                AI Prep
+              <p className="text-[10px] leading-tight font-semibold uppercase tracking-[0.15em]"
+                style={{ color: 'rgba(165, 180, 252, 0.6)' }}>
+                AI Prep Platform
               </p>
             </div>
           </div>
           <button
-            className="lg:hidden p-1 rounded-md text-slate-500 hover:text-white hover:bg-white/10 transition-colors"
+            className="lg:hidden p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/10 transition-colors"
             onClick={() => setMobileOpen(false)}
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Nav label */}
-        <div className="px-5 pb-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600">Navigation</p>
-        </div>
-
-        {/* Nav items */}
-        <nav className="flex-1 px-3 overflow-y-auto pb-4 space-y-4">
+        {/* Nav sections */}
+        <nav className="flex-1 px-3 overflow-y-auto pb-4 space-y-5 dark-scrollbar">
           {navSections.map((section) => (
             <div key={section.label}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 px-2 mb-1">{section.label}</p>
+              <p className="text-[9px] font-bold uppercase tracking-[0.2em] px-3 mb-2"
+                style={{ color: 'rgba(148,163,184,0.35)' }}>
+                {section.label}
+              </p>
               <div className="space-y-0.5">
                 {section.items.map((item) => (
                   <SidebarNavItem
@@ -146,19 +150,21 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </nav>
 
         {/* Divider */}
-        <div className="mx-4 border-t border-white/[0.06]" />
+        <div className="mx-5 border-t" style={{ borderColor: 'rgba(255,255,255,0.04)' }} />
 
         {/* User section */}
         <div className="p-4 space-y-2">
-          <div className="flex items-center gap-3 px-2 py-2 rounded-xl">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-400 flex items-center justify-center text-white flex-shrink-0">
+          <div className="flex items-center gap-3 px-2 py-2.5 rounded-xl"
+            style={{ background: 'rgba(255,255,255,0.03)' }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
               <UserIcon className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white truncate leading-tight">
+              <p className="text-[13px] font-semibold text-white truncate leading-tight">
                 {user?.name || 'User'}
               </p>
-              <p className="text-xs text-slate-500 truncate mt-0.5">
+              <p className="text-[11px] truncate mt-0.5" style={{ color: 'rgba(148,163,184,0.5)' }}>
                 {user?.email || 'user@example.com'}
               </p>
             </div>
@@ -166,7 +172,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
           <button
             onClick={handleLogout}
-            className="nav-item w-full text-left hover:text-red-400"
+            className="nav-item w-full text-left hover:!text-red-400"
             style={{ border: '1px solid transparent' }}
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
@@ -178,7 +184,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* ── Main area ── */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile top bar */}
-        <header className="lg:hidden bg-white border-b border-slate-200 px-4 py-3.5 flex items-center justify-between sticky top-0 z-30">
+        <header className="lg:hidden bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 py-3.5 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-2.5">
             <AppLogo size={28} />
             <span className="font-semibold text-slate-900 text-sm" style={{ fontFamily: 'Outfit, sans-serif' }}>

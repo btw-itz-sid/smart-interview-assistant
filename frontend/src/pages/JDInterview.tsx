@@ -162,9 +162,9 @@ export default function JDInterview() {
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-0.5">AI Pipeline</p>
-          <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>JD → Interview</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Paste any job description. AI extracts skills and builds a custom interview.</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-0.5">Interview from JD</p>
+          <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>Job Description Interview</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Paste any job description. Skills are extracted and a custom interview is built around them.</p>
         </div>
       </div>
 
@@ -215,15 +215,15 @@ export default function JDInterview() {
           </div>
 
           {/* What the AI will do */}
-          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Zap className="w-4 h-4 text-indigo-500" />
-              <p className="text-xs font-semibold text-indigo-700">What AI Does</p>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="w-4 h-4 text-slate-400" />
+              <p className="text-xs font-semibold text-slate-600">How it works</p>
             </div>
-            <ul className="space-y-2 text-xs text-indigo-800">
-              {['Extracts required skills & tech stack', 'Identifies seniority & difficulty level', 'Generates 60% technical + 40% behavioral mix', 'Tailors every question to the JD'].map((t, i) => (
+            <ul className="space-y-2 text-xs text-slate-600">
+              {['Extracts required skills and tech stack', 'Identifies seniority and difficulty level', 'Generates 60% technical + 40% behavioral mix', 'Tailors every question to this specific role'].map((t, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <span className="w-4 h-4 rounded-full bg-indigo-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                  <span className="w-4 h-4 rounded-full bg-slate-200 text-slate-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
                   {t}
                 </li>
               ))}

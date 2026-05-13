@@ -32,18 +32,26 @@ export const findInterviewById = async (id: number) => {
   return interview;
 };
 
-// Ek user ki saari interviews nikalo - newest pehle
-export const findInterviewsByUserId = async (userId: number) => {
+// User ki interviews — supports pagination and filtering
+export const findInterviewsByUserId = async (userId: number, options?: { skip?: number; take?: number; where?: any }) => {
+  const where = options?.where || { userId };
   const interviews = await prisma.interview.findMany({
-    where: { userId },
+    where,
     include: {
       questions: true,
     },
     orderBy: {
-      createdAt: 'desc', // Sabse nayi pehle
+      createdAt: 'desc',
     },
+    skip: options?.skip,
+    take: options?.take,
   });
   return interviews;
+};
+
+// Count interviews for pagination
+export const countInterviews = async (where: any) => {
+  return prisma.interview.count({ where });
 };
 
 // Interview ka score aur feedback update karo jab evaluation complete ho
@@ -56,7 +64,7 @@ export const updateInterviewScore = async (
     where: { id: interviewId },
     data: { score, feedback },
   });
-  logger.debug(`Interview ${interviewId} ka score update hua: ${score}`);
+  logger.debug(`Interview ${interviewId} score updated: ${score}`);
   return updated;
 };
 
@@ -85,7 +93,7 @@ export const updateQuestionAnswer = async (
     where: { id: questionId },
     data: { answer, evaluation, score },
   });
-  logger.debug(`Question ${questionId} ka answer save hua - Score: ${score}`);
+  logger.debug(`Question ${questionId} answer saved — Score: ${score}`);
   return updated;
 };
 
@@ -96,7 +104,7 @@ export const findInterviewsByTopic = async (userId: number, topic: string) => {
       userId,
       topic: {
         contains: topic,
-        mode: 'insensitive', // Case insensitive search
+        mode: 'insensitive',
       },
     },
     include: {

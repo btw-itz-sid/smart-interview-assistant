@@ -7,33 +7,41 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model user information store karne ke liye
+// User model — stores user profile and authentication data
 model User {
-  id        Int         @id @default(autoincrement())
-  name      String
-  email     String      @unique
-  password  String
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  interviews Interview[]
-  progress  Progress[]
+  id              Int              @id @default(autoincrement())
+  name            String
+  email           String           @unique
+  password        String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  interviews      Interview[]
+  progress        Progress[]
+  streak          Streak?
+  badges          Badge[]
+  resumeAnalyses  ResumeAnalysis[]
 }
 
-// AI Mock Interview history store karne ke liye
+// AI Mock Interview session — tracks each interview attempt
 model Interview {
-  id        Int         @id @default(autoincrement())
-  userId    Int
-  topic     String
-  score     Int?
-  feedback  String?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  
+  id         Int         @id @default(autoincrement())
+  userId     Int
+  topic      String
+  difficulty String      @default("medium")
+  type       String      @default("general")  // general | company | jd | behavioral
+  company    String?                           // For company-specific interviews
+  score      Int?
+  feedback   String?
+  timeSpent  Int?                              // Total seconds spent
+  hintsUsed  Int         @default(0)           // How many hints the user requested
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   questions Question[]
 }
 
-// Interview ke andar jo questions pooche gaye aur unke evaluation ke liye
+// Questions within an interview and their evaluations
 model Question {
   id          Int      @id @default(autoincrement())
   interviewId Int
@@ -41,21 +49,66 @@ model Question {
   answer      String?
   evaluation  String?
   score       Int?
+  timeSpent   Int?     // Seconds spent on this question
+  hintUsed    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
 }
 
-// User ka overall progress aur analytics track karne ke liye
+// User progress and analytics per topic
 model Progress {
   id        Int      @id @default(autoincrement())
   userId    Int
   topic     String
   avgScore  Float    @default(0)
-  totalIter Int      @default(0) // Kitne interviews diye is topic par
+  totalIter Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Streak tracking — daily practice consistency
+model Streak {
+  id             Int       @id @default(autoincrement())
+  userId         Int       @unique
+  currentStreak  Int       @default(0)
+  longestStreak  Int       @default(0)
+  lastActiveDate DateTime?
+  totalXP        Int       @default(0)
+  level          Int       @default(1)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Achievement badges earned by users
+model Badge {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  badgeType String   // FIRST_INTERVIEW, WEEK_WARRIOR, PERFECT_10, RESUME_PRO, etc.
+  earnedAt  DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeType])
+}
+
+// Resume analysis history — tracks improvement over time
+model ResumeAnalysis {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  atsScore      Int
+  grade         String
+  breakdown     String   // JSON stringified breakdown
+  suggestions   String   // JSON stringified suggestions
+  keywordCount  Int      @default(0)
+  wordCount     Int      @default(0)
+  targetRole    String?
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

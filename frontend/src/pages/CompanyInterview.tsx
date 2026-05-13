@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
 import {
   Building2, ChevronRight, Loader2, Lightbulb,
-  ArrowLeft, Play, CheckCircle, AlertCircle, Info, Sparkles
+  ArrowLeft, CheckCircle, AlertCircle, Info, Sparkles
 } from 'lucide-react';
 
 // ── Company data — no emojis, using initials with brand-like colors ────

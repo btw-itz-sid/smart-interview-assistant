@@ -47,33 +47,29 @@ export default function Login() {
 
         {/* Center content */}
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-2 mb-6">
-            <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-            <span className="text-xs font-medium text-slate-300">AI-Powered Interview Prep</span>
-          </div>
-          <h2 className="text-4xl font-bold text-white leading-tight mb-4" style={{ fontFamily: 'Outfit, sans-serif' }}>
-            Land your<br />
-            <span className="text-gradient">dream job</span>.
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-400 mb-5">
+            Smart Interview
+          </p>
+          <h2 className="text-4xl font-bold text-white leading-[1.15] mb-4" style={{ fontFamily: 'Outfit, sans-serif' }}>
+            Practice once.<br />
+            Nail it every time.
           </h2>
-          <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
-            Practice with real-world questions, get instant AI feedback, and track your progress over time.
+          <p className="text-slate-400 text-sm leading-relaxed max-w-[280px] mb-9">
+            Five interview modes, per-answer AI scoring, and a 5-dimension ATS resume analyzer — built for people who take job prep seriously.
           </p>
 
-          {/* Feature highlights instead of fake testimonial */}
-          <div className="mt-8 space-y-4">
+          {/* Feature list — clean, no animation */}
+          <div className="space-y-0">
             {[
-              { icon: BrainCircuit, title: 'AI-Powered Questions', desc: 'Tailored to your topic and difficulty level' },
-              { icon: BarChart2, title: 'Track Your Growth', desc: 'Score trends and topic-wise analytics' },
-              { icon: Shield, title: 'ATS Resume Analysis', desc: '5-dimension scoring with actionable tips' },
-            ].map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-white/[0.06] border border-white/[0.06] flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-4 h-4 text-indigo-400" />
+              { icon: BrainCircuit, text: 'Topic-specific questions at any difficulty' },
+              { icon: BarChart2,    text: 'Streak tracking, XP, and topic analytics' },
+              { icon: Shield,       text: '5-dimension ATS score with keyword gaps' },
+            ].map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-center gap-3 py-3 border-b border-white/[0.06]">
+                <div className="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-3.5 h-3.5 text-indigo-400" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-white">{title}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
-                </div>
+                <span className="text-sm text-slate-300">{text}</span>
               </div>
             ))}
           </div>

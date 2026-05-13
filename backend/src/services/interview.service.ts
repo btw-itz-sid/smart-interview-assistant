@@ -1,10 +1,11 @@
 // ============================================
-// Interview Service - Mock Interview ki business logic
-// Questions generate karna, answers evaluate karna, history manage karna
+// Interview Service — Mock Interview business logic
+// Questions generate, answers evaluate, history manage, streaks track
 // ============================================
 
 import * as interviewRepo from '../repositories/interview.repository';
 import * as progressRepo from '../repositories/progress.repository';
+import * as streakRepo from '../repositories/streak.repository';
 import * as aiService from './ai.service';
 import { ApiError } from '../utils/ApiError';
 import { logger } from '../utils/logger';
@@ -117,10 +118,13 @@ export const submitAnswer = async (
         topic,
         score: avgScore,
       });
+
+      // Streak & XP update karo
+      await streakRepo.updateStreakOnActivity(userId, avgScore);
     }
   }
 
-  logger.info(`Answer evaluated - Score: ${evaluation.score}/10`);
+  logger.info(`Answer evaluated — Score: ${evaluation.score}/10`);
 
   return {
     questionId: updatedQuestion.id,
@@ -130,26 +134,45 @@ export const submitAnswer = async (
 };
 
 // ============================================
-// Chat history nikalo - user ki saari interviews aur Q&A
+// Chat history — paginated, filterable
 // ============================================
-export const getChatHistory = async (userId: number) => {
-  const interviews = await interviewRepo.findInterviewsByUserId(userId);
+export const getChatHistory = async (userId: number, options?: { topic?: string; page?: number; limit?: number }) => {
+  const page = options?.page || 1;
+  const limit = Math.min(options?.limit || 20, 50);
+  const skip = (page - 1) * limit;
 
-  // Interviews ko formatted response mein convert karo
-  return interviews.map((interview) => ({
-    interviewId: interview.id,
-    topic: interview.topic,
-    score: interview.score,
-    feedback: interview.feedback,
-    date: interview.createdAt,
-    questions: interview.questions.map((q) => ({
-      id: q.id,
-      question: q.question,
-      answer: q.answer,
-      evaluation: q.evaluation,
-      score: q.score,
+  const where: any = { userId };
+  if (options?.topic) {
+    where.topic = { contains: options.topic, mode: 'insensitive' };
+  }
+
+  const [interviews, total] = await Promise.all([
+    interviewRepo.findInterviewsByUserId(userId, { skip, take: limit, where }),
+    interviewRepo.countInterviews(where),
+  ]);
+
+  return {
+    interviews: interviews.map((interview) => ({
+      interviewId: interview.id,
+      topic: interview.topic,
+      score: interview.score,
+      feedback: interview.feedback,
+      date: interview.createdAt,
+      questions: interview.questions.map((q) => ({
+        id: q.id,
+        question: q.question,
+        answer: q.answer,
+        evaluation: q.evaluation,
+        score: q.score,
+      })),
     })),
-  }));
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
 
 // ============================================

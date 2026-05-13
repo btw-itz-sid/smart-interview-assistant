@@ -24,7 +24,7 @@ export const registerUser = async (data: {
   const existingUser = await userRepo.findUserByEmail(data.email);
 
   if (existingUser) {
-    throw new BadRequestError('Is email se pehle se account hai - login karo');
+    throw new BadRequestError('An account with this email already exists - please login');
   }
 
   // Password ko hash karo - plain text mein kabhi save mat karo!
@@ -41,7 +41,7 @@ export const registerUser = async (data: {
   // JWT token generate karo naye user ke liye
   const token = generateToken({ userId: user.id, email: user.email });
 
-  logger.info(`Naya user registered: ${user.email}`);
+  logger.info(`New user registered: ${user.email}`);
 
   return {
     user: {
@@ -66,14 +66,14 @@ export const loginUser = async (data: {
 
   if (!user) {
     // Security ke liye generic message do - batao mat ki email galat hai ya password
-    throw new UnauthorizedError('Email ya password galat hai');
+    throw new UnauthorizedError('Invalid email or password');
   }
 
   // Password compare karo - hash se match karo
   const isPasswordValid = await bcrypt.compare(data.password, user.password);
 
   if (!isPasswordValid) {
-    throw new UnauthorizedError('Email ya password galat hai');
+    throw new UnauthorizedError('Invalid email or password');
   }
 
   // Login successful - token generate karo
@@ -98,7 +98,7 @@ export const getUserProfile = async (userId: number) => {
   const user = await userRepo.findUserById(userId);
 
   if (!user) {
-    throw new ApiError(404, 'User nahi mila');
+    throw new ApiError(404, 'User not found');
   }
 
   return user;

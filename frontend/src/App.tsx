@@ -9,14 +9,15 @@ import ChatHistory from './pages/ChatHistory';
 import ResumeAnalyzer from './pages/ResumeAnalyzer';
 import CompanyInterview from './pages/CompanyInterview';
 import JDInterview from './pages/JDInterview';
+import BehavioralInterview from './pages/BehavioralInterview';
 
-// Protected Route Wrapper - Sirf logged in users ke liye
+// Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-[#0d0f17]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 rounded-full border-[3px] border-indigo-200 border-t-indigo-500 animate-spin" />
           <p className="text-sm text-slate-400 font-medium">Loading…</p>
@@ -44,6 +45,7 @@ function App() {
       <Route path="/resume" element={<ProtectedRoute><ResumeAnalyzer /></ProtectedRoute>} />
       <Route path="/company-interview" element={<ProtectedRoute><CompanyInterview /></ProtectedRoute>} />
       <Route path="/jd-interview" element={<ProtectedRoute><JDInterview /></ProtectedRoute>} />
+      <Route path="/behavioral" element={<ProtectedRoute><BehavioralInterview /></ProtectedRoute>} />
 
       {/* 404 */}
       <Route path="*" element={<Navigate to="/" replace />} />

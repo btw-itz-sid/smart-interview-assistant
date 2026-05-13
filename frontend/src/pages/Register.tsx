@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { Mail, Lock, User as UserIcon, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 import AppLogo from '../components/AppLogo';
 
 const features = [
-  'AI-generated interview questions',
-  'Instant evaluation & scoring',
-  'Topic-wise progress tracking',
-  'ATS Resume Analyzer',
+  'Interview questions tailored to any topic',
+  'Per-answer scoring and written feedback',
+  'Topic-wise progress and streak tracking',
+  'ATS resume analyzer with 5-dimension score',
 ];
 
 export default function Register() {
@@ -59,20 +59,20 @@ export default function Register() {
 
         {/* Center content */}
         <div className="relative z-10">
-          <p className="text-indigo-400 text-xs font-semibold uppercase tracking-widest mb-4">Get started for free</p>
-          <h2 className="text-4xl font-bold text-white leading-tight mb-4" style={{ fontFamily: 'Outfit, sans-serif' }}>
-            Everything you need<br />
-            to <span className="text-gradient">ace interviews</span>.
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-400 mb-5">Get started free</p>
+          <h2 className="text-4xl font-bold text-white leading-[1.15] mb-4" style={{ fontFamily: 'Outfit, sans-serif' }}>
+            Built for serious<br />
+            job seekers.
           </h2>
-          <p className="text-slate-400 text-sm leading-relaxed max-w-xs mb-8">
-            Join thousands of candidates who've improved their interview performance with AI-powered practice.
+          <p className="text-slate-400 text-sm leading-relaxed max-w-[280px] mb-9">
+            No generic questions. Every session is tailored to your topic, difficulty, and target company.
           </p>
 
-          <div className="space-y-3">
+          <div className="space-y-0">
             {features.map((f) => (
-              <div key={f} className="flex items-center gap-3">
-                <CheckCircle2 className="w-4 h-4 text-indigo-400 flex-shrink-0" />
-                <span className="text-slate-300 text-sm">{f}</span>
+              <div key={f} className="flex items-center gap-3 py-3 border-b border-white/[0.06]">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />
+                <span className="text-sm text-slate-300">{f}</span>
               </div>
             ))}
           </div>

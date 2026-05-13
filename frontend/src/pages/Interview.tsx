@@ -28,6 +28,8 @@ const DIFFICULTIES = [
 export default function Interview() {
   const [topic, setTopic]           = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [timerEnabled, setTimerEnabled] = useState(false);
+  const [timerMinutes, setTimerMinutes] = useState(3);
   const [inProgress, setInProgress] = useState(false);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState('');
@@ -57,6 +59,8 @@ export default function Interview() {
         topic={interviewData.topic}
         questions={interviewData.questions}
         onEnd={() => setInProgress(false)}
+        timerEnabled={timerEnabled}
+        timerSeconds={timerMinutes * 60}
       />
     );
   }
@@ -155,6 +159,41 @@ export default function Interview() {
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Timer Toggle */}
+          <div className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50">
+            <div className="flex items-center gap-3">
+              <Timer className="w-4 h-4 text-slate-500" />
+              <div>
+                <p className="text-sm font-semibold text-slate-700">Pressure Mode</p>
+                <p className="text-[11px] text-slate-400">Countdown timer per question</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {timerEnabled && (
+                <select
+                  value={timerMinutes}
+                  onChange={e => setTimerMinutes(Number(e.target.value))}
+                  className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 outline-none"
+                >
+                  <option value={2}>2 min</option>
+                  <option value={3}>3 min</option>
+                  <option value={5}>5 min</option>
+                </select>
+              )}
+              <button
+                type="button"
+                onClick={() => setTimerEnabled(!timerEnabled)}
+                className={`w-10 h-5.5 rounded-full transition-all duration-200 relative ${timerEnabled ? 'bg-indigo-500' : 'bg-slate-200'}`}
+                style={{ width: 40, height: 22 }}
+              >
+                <span
+                  className="absolute top-0.5 w-4.5 h-4.5 rounded-full bg-white shadow transition-all duration-200"
+                  style={{ width: 18, height: 18, left: timerEnabled ? 19 : 3 }}
+                />
+              </button>
             </div>
           </div>
 

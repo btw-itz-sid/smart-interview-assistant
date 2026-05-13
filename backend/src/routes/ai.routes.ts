@@ -1,6 +1,6 @@
 // ============================================
-// AI Interview Routes - /api/ai/*
-// Mock interview generation aur evaluation ke routes
+// AI Interview Routes — /api/ai/*
+// Mock interview, hints, behavioral, company, JD routes
 // ============================================
 
 import { Router } from 'express';
@@ -15,29 +15,33 @@ import {
   getInterviewDetail,
   companyInterview,
   jdInterview,
+  getHint,
+  behavioralInterview,
+  evaluateBehavioral,
 } from '../controllers/ai.controller';
 
 const router = Router();
 
-// Sabhi AI routes ke liye auth required hai
+// All AI routes require authentication
 router.use(authMiddleware);
 
-// POST /api/ai/generate-questions - Interview start karo
+// Core interview flow
 router.post('/generate-questions', validateBody(generateQuestionSchema), generateQuestions);
-
-// POST /api/ai/evaluate-answer - Answer evaluate karo
 router.post('/evaluate-answer', validateBody(evaluateAnswerSchema), evaluateAnswer);
 
-// GET /api/ai/chat-history - Saari interview history (5min cache)
+// Chat history with pagination support
 router.get('/chat-history', cacheMiddleware(300), getChatHistory);
-
-// GET /api/ai/interview/:id - Specific interview ki detail
 router.get('/interview/:id', getInterviewDetail);
 
-// POST /api/ai/company-interview - Company-specific interview generate karo
+// Company & JD interview modes
 router.post('/company-interview', companyInterview);
-
-// POST /api/ai/jd-interview - JD se custom interview generate karo
 router.post('/jd-interview', jdInterview);
+
+// Real-time interview coaching hint
+router.post('/hint', getHint);
+
+// Behavioral STAR-L interview mode
+router.post('/behavioral', behavioralInterview);
+router.post('/behavioral/evaluate', evaluateBehavioral);
 
 export default router;

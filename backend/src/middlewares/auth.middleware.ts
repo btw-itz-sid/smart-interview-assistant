@@ -24,14 +24,14 @@ export const authMiddleware = (
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedError('Token nahi mila - pehle login karo');
+      throw new UnauthorizedError('Token missing - please login first');
     }
 
     // "Bearer " ke baad wala part token hai
     const token = authHeader.split(' ')[1];
 
     if (!token) {
-      throw new UnauthorizedError('Token format galat hai');
+      throw new UnauthorizedError('Invalid token format');
     }
 
     // Token verify karo - agar expired ya tampered hai toh error aayega
@@ -48,11 +48,11 @@ export const authMiddleware = (
   } catch (error) {
     // Agar token invalid hai ya expire ho gaya
     if (error instanceof jwt.JsonWebTokenError) {
-      next(new UnauthorizedError('Token invalid hai - dobara login karo'));
+      next(new UnauthorizedError('Invalid token - please login again'));
       return;
     }
     if (error instanceof jwt.TokenExpiredError) {
-      next(new UnauthorizedError('Token expire ho gaya - dobara login karo'));
+      next(new UnauthorizedError('Token expired - please login again'));
       return;
     }
     next(error);

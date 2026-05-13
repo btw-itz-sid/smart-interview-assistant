@@ -35,17 +35,22 @@ export const generateInterviewQuestions = async (
       messages: [
         {
           role: 'system',
-          content: `You are an elite Staff-level technical interviewer at a top-tier tech company (FAANG). Generate exactly ${count} highly complex, non-repetitive interview questions on the given topic.
-          
-Rules:
-- Difficulty level: ${difficulty}
-- ABSOLUTELY NO generic, theoretical, or textbook questions (e.g., "What is X?", "Explain Y").
-- EVERY question MUST be a real-world, scenario-based problem involving architecture, debugging, trade-offs, or scaling.
-- Frame questions indirectly or with a 'twist'. Tough interviewers often disguise simple concepts inside complex, confusing real-world scenarios to see if you actually understand the core mechanics rather than just memorized definitions.
-- Ensure questions are exceptionally tough, tricky, and test the candidate's actual battle-tested experience.
-- Do not repeat question patterns.
-- Return ONLY a JSON array of strings, no extra text.
-- Example format: ["Scenario: You have a microservice that...", "How would you design..."]`,
+          content: `You are an elite Staff-level technical interviewer at a top-tier company in 2026. The AI era has transformed what interviewers look for — they now test REAL engineering judgment, not memorized definitions.
+
+Generate exactly ${count} highly complex, non-repetitive interview questions on the given topic.
+
+RULES:
+- Difficulty: ${difficulty}
+- ABSOLUTELY NO generic/theoretical questions ("What is X?", "Explain Y"). These are worthless in the AI era since anyone can ask ChatGPT.
+- Every question MUST test one of these REAL-WORLD skills:
+  1. PRODUCTION DEBUGGING: "Your service is returning 200ms latency spikes every 4 hours. Here's what the logs show... What's your investigation approach?"
+  2. ARCHITECTURE TRADE-OFFS: "You need to choose between X and Y for this specific constraint. Walk me through your decision framework."
+  3. AI-ERA JUDGMENT: "An AI tool generated this code/design. What's wrong with it and how would you improve it?"
+  4. SCALING UNDER PRESSURE: "Traffic just 10x'd unexpectedly. Your current architecture is... What breaks first and how do you triage?"
+  5. CROSS-FUNCTIONAL COMMUNICATION: "How would you explain this technical trade-off to a non-technical VP to get budget approval?"
+- Frame questions with realistic context — company names, team sizes, real metrics, production incidents.
+- Include at least one question that tests the candidate's ability to work WITH AI tools while maintaining engineering rigor.
+- Return ONLY a JSON array of strings.`,
         },
         {
           role: 'user',
@@ -110,17 +115,22 @@ export const evaluateAnswer = async (
       messages: [
         {
           role: 'system',
-          content: `You are an expert technical interviewer evaluating a candidate's answer.
+          content: `You are a senior technical interviewer evaluating a candidate's answer in 2026's AI era. You evaluate with the STAR-L framework (Situation, Task, Action, Result, Learnings).
 
 Evaluate the answer and return a JSON object with:
-1. "score": A number from 0 to 10 (10 being perfect)
+1. "score": A number from 0 to 10 (10 being perfect). Score based on:
+   - Technical Accuracy (0-3 pts): Is the answer technically correct? Does it show real understanding vs memorized definitions?
+   - Practical Depth (0-3 pts): Does the candidate show real-world experience? Production debugging skills? Trade-off reasoning?
+   - Communication Clarity (0-2 pts): Is the answer structured, concise, and explainable to both technical and non-technical audiences?
+   - AI-Era Thinking (0-2 pts): Does the candidate show judgment beyond what an AI tool could produce? Original thinking, edge-case awareness, ethical considerations?
 2. "evaluation": A detailed feedback string (2-3 paragraphs) covering:
-   - What was good about the answer
-   - What was missing or incorrect
-   - Suggestions for improvement
+   - What demonstrated real engineering judgment (not just textbook knowledge)
+   - What was missing: production considerations, edge cases, scalability concerns
+   - Specific improvement tips: "In a real interview at Google/Amazon, they would probe deeper on X"
+   - How to upgrade this answer from good to exceptional
 
-Return ONLY valid JSON, no extra text.
-Example: {"score": 7, "evaluation": "Good explanation of..."}`,
+Return ONLY valid JSON.
+Example: {"score": 7, "evaluation": "Strong technical foundation shown in..."}`,
         },
         {
           role: 'user',
@@ -613,5 +623,231 @@ Return ONLY valid JSON.`,
     }
     if (error instanceof ApiError) throw error;
     throw new ApiError(500, `ATS scoring mein problem: ${error.message}`);
+  }
+};
+
+// ============================================
+// AI Interview Hint — Real-time coaching during interview
+// Gives a directional nudge without revealing the answer
+// ============================================
+export const getInterviewHint = async (
+  question: string,
+  partialAnswer: string,
+  topic: string
+): Promise<{ hint: string }> => {
+  try {
+    logger.info('Interview hint requested');
+    const response = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a supportive interview coach. The candidate is stuck on a question. Give them ONE short, directional hint (2-3 sentences max) that nudges them toward the right approach WITHOUT revealing the full answer.
+
+Think like a real interviewer who says: "Think about what happens when..." or "Consider the trade-off between..." or "What if you approached this from the perspective of..."
+
+NEVER give the actual answer. Only guide their thinking.`,
+        },
+        {
+          role: 'user',
+          content: `Topic: ${topic}\nQuestion: ${question}\nCandidate's partial answer so far: ${partialAnswer || '(nothing yet)'}\n\nGive a helpful nudge.`,
+        },
+      ],
+      temperature: 0.5,
+      max_tokens: 200,
+    });
+
+    const hint = response.choices[0]?.message?.content?.trim() || 'Think about the core trade-offs involved in this problem.';
+    return { hint };
+  } catch (error: any) {
+    if (error.message?.includes('429') || error.status === 429) {
+      return { hint: `Consider breaking down the ${topic} problem into smaller sub-problems. What are the key constraints?` };
+    }
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(500, `Hint generation failed: ${error.message}`);
+  }
+};
+
+// ============================================
+// Behavioral STAR-L Interview — dedicated behavioral round
+// Evaluates Situation/Task/Action/Result/Learnings separately
+// ============================================
+export const generateBehavioralInterview = async (
+  focusArea: string = 'general',
+  count: number = 4
+): Promise<{ questions: string[]; framework: string; tips: string[] }> => {
+  try {
+    logger.info(`Behavioral interview generating - Focus: ${focusArea}`);
+    const response = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You are an expert behavioral interviewer at a top-tier company in 2026. The AI era has changed what companies value — they now prioritize ADAPTABILITY, AI LITERACY, OWNERSHIP, and CONFLICT RESOLUTION over traditional leadership questions.
+
+Generate ${count} behavioral interview questions using these 2026-era themes:
+1. ADAPTABILITY: "Tell me about a time you had to unlearn a process/tool and master a new one under tight deadlines"
+2. AI-ERA JUDGMENT: "Describe a situation where AI/automation produced incorrect results and you had to course-correct"
+3. NAVIGATING AMBIGUITY: "Tell me about a decision you made without complete data. How did you reason through it?"
+4. OWNERSHIP WITHOUT AUTHORITY: "Describe a project where you drove results without having formal authority over the team"
+5. CONFLICT WITH DATA: "Tell me about a time you disagreed with a technical decision. How did you use data to resolve it?"
+6. CROSS-FUNCTIONAL INFLUENCE: "How did you explain a complex technical trade-off to get buy-in from non-technical stakeholders?"
+
+Focus area: ${focusArea}
+
+Return JSON with:
+- "questions": Array of ${count} behavioral questions
+- "framework": The STAR-L framework explanation (1 paragraph)
+- "tips": Array of 3-4 specific tips for answering behavioral questions in 2026
+
+Return ONLY valid JSON.`,
+        },
+      ],
+      temperature: 0.6,
+      max_tokens: 1200,
+    });
+
+    const content = response.choices[0]?.message?.content?.trim();
+    if (!content) throw new ApiError(500, 'AI response empty');
+
+    try {
+      return JSON.parse(content);
+    } catch {
+      return {
+        questions: [
+          'Tell me about a time you had to adapt to a major technology shift in your team.',
+          'Describe a situation where an AI tool produced incorrect results in your workflow. How did you handle it?',
+          'Tell me about a decision you made with incomplete information. What was your reasoning framework?',
+          'Describe a project where you had to influence without authority.',
+        ].slice(0, count),
+        framework: 'Use STAR-L: Situation (context), Task (your responsibility), Action (what YOU did), Result (measurable outcome), Learning (what you took away for the future).',
+        tips: ['Quantify every result with numbers', 'Show what YOU did, not the team', 'Always end with what you learned'],
+      };
+    }
+  } catch (error: any) {
+    if (error.message?.includes('429') || error.status === 429) {
+      return {
+        questions: Array.from({ length: count }, (_, i) => `Behavioral Question ${i + 1}: Describe a challenging situation related to ${focusArea}.`),
+        framework: 'STAR-L: Situation, Task, Action, Result, Learnings.',
+        tips: ['Prepare 6-8 anchor stories', 'Quantify impact', 'Show ownership'],
+      };
+    }
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(500, `Behavioral interview generation failed: ${error.message}`);
+  }
+};
+
+// ============================================
+// Evaluate behavioral answer with STAR-L scoring
+// ============================================
+export const evaluateBehavioralAnswer = async (
+  question: string,
+  answer: string
+): Promise<{ score: number; evaluation: string; starBreakdown: { situation: number; task: number; action: number; result: number; learning: number } }> => {
+  try {
+    const response = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a behavioral interview expert evaluating using the STAR-L framework.
+
+Score each component out of 2 points (total 10):
+- Situation (0-2): Did they set clear context?
+- Task (0-2): Did they define their specific responsibility?
+- Action (0-2): Did they describe what THEY personally did (not the team)?
+- Result (0-2): Did they provide measurable, quantified outcomes?
+- Learning (0-2): Did they articulate what they learned and how they applied it going forward?
+
+Return JSON:
+{
+  "score": <total 0-10>,
+  "evaluation": "<2-3 paragraph detailed feedback>",
+  "starBreakdown": { "situation": <0-2>, "task": <0-2>, "action": <0-2>, "result": <0-2>, "learning": <0-2> }
+}`,
+        },
+        {
+          role: 'user',
+          content: `Question: ${question}\nAnswer: ${answer}`,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 800,
+    });
+
+    const content = response.choices[0]?.message?.content?.trim();
+    if (!content) throw new ApiError(500, 'AI evaluation empty');
+
+    try {
+      const result = JSON.parse(content);
+      result.score = Math.max(0, Math.min(10, Math.round(result.score)));
+      return result;
+    } catch {
+      return {
+        score: 5,
+        evaluation: content,
+        starBreakdown: { situation: 1, task: 1, action: 1, result: 1, learning: 1 },
+      };
+    }
+  } catch (error: any) {
+    if (error.message?.includes('429') || error.status === 429) {
+      return {
+        score: 6,
+        evaluation: 'Your behavioral answer shows promise. Focus on quantifying results and clearly separating what YOU did from team efforts.',
+        starBreakdown: { situation: 1, task: 1, action: 1, result: 2, learning: 1 },
+      };
+    }
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(500, `Behavioral evaluation failed: ${error.message}`);
+  }
+};
+
+// ============================================
+// Generate Industry-Level Resume (2026 ATS-optimized)
+// ============================================
+export const generateIndustryResume = async (
+  topicProgressDetails: any[],
+  targetRole?: string,
+  targetCompany?: string
+): Promise<string> => {
+  try {
+    logger.info('Industry-level resume generation started');
+    const performanceSummary = topicProgressDetails.map(p => `${p.topic}: ${p.averageScore}/10`).join(', ');
+
+    const response = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You are an expert resume writer specializing in 2026 ATS-optimized, industry-level resumes. Generate a complete, highly professional Markdown resume.
+
+BASE IT ON the user's mock test performance: ${performanceSummary}
+${targetRole ? `Target Role: ${targetRole}` : ''}
+${targetCompany ? `Target Company: ${targetCompany}` : ''}
+
+2026 RESUME STANDARDS:
+- Single-column layout (ATS-friendly)
+- Action + Result bullet format: "Led X → achieved Y% improvement"
+- Quantify EVERYTHING with real metrics
+- Include AI literacy and modern tools (LLMs, vector DBs, cloud-native)
+- Standard section headers: Professional Summary, Technical Skills, Experience, Projects, Education
+- 450-650 words optimal range
+- Mirror industry keywords naturally
+- Show progression and increasing responsibility
+
+Output ONLY pure Markdown text. Do NOT wrap in \`\`\`markdown.`,
+        },
+      ],
+      temperature: 0.5,
+      max_tokens: 1800,
+    });
+
+    return response.choices[0]?.message?.content?.trim() || 'Resume generation failed.';
+  } catch (error: any) {
+    if (error.message?.includes('429') || error.status === 429) {
+      return `# Software Engineer\n\n## Professional Summary\nResults-driven engineer with demonstrated expertise in ${topicProgressDetails.map(p => p.topic).join(', ')}.\n\n## Technical Skills\n${topicProgressDetails.map(p => `- **${p.topic}**: Advanced (${p.averageScore}/10)`).join('\n')}\n\n## Experience\n**Software Engineer | Tech Company**\n- Built scalable applications using modern tech stack\n- Improved system performance by 35% through optimization`;
+    }
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(500, `Resume generation failed: ${error.message}`);
   }
 };
