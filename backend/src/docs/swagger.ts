@@ -113,6 +113,56 @@ Token login/register endpoint se milta hai.
             topic: { type: 'string', example: 'JavaScript Promises' },
           },
         },
+        CompanyInterviewRequest: {
+          type: 'object',
+          required: ['company', 'role'],
+          properties: {
+            company: { type: 'string', example: 'Google' },
+            role: { type: 'string', example: 'Frontend Engineer' },
+            difficulty: { type: 'string', enum: ['easy', 'medium', 'hard'], default: 'medium' },
+            count: { type: 'integer', minimum: 1, maximum: 10, default: 5 },
+          },
+        },
+        JDInterviewRequest: {
+          type: 'object',
+          required: ['jobDescription'],
+          properties: {
+            jobDescription: {
+              type: 'string',
+              minLength: 50,
+              example: 'We are hiring a React engineer with TypeScript, API integration, testing, and performance optimization experience.',
+            },
+            count: { type: 'integer', minimum: 1, maximum: 10, default: 5 },
+          },
+        },
+        HintRequest: {
+          type: 'object',
+          required: ['question', 'topic'],
+          properties: {
+            question: { type: 'string', example: 'How would you debug a slow React dashboard?' },
+            partialAnswer: { type: 'string', example: 'I would start by checking render performance...' },
+            topic: { type: 'string', example: 'React' },
+          },
+        },
+        BehavioralInterviewRequest: {
+          type: 'object',
+          properties: {
+            focusArea: {
+              type: 'string',
+              enum: ['adaptability', 'ai-era', 'leadership', 'conflict', 'ambiguity', 'general'],
+              default: 'general',
+            },
+            count: { type: 'integer', minimum: 1, maximum: 10, default: 4 },
+          },
+        },
+        BehavioralEvaluateRequest: {
+          type: 'object',
+          required: ['question', 'answer'],
+          properties: {
+            question: { type: 'string', example: 'Tell me about a time you handled ambiguity.' },
+            answer: { type: 'string', example: 'In my previous project, requirements changed mid-sprint...' },
+          },
+        },
 
         // ---- Resume Schemas ----
         ResumeAnalyzeRequest: {
@@ -121,6 +171,15 @@ Token login/register endpoint se milta hai.
           properties: {
             resumeText: { type: 'string', minLength: 50, example: 'John Doe\nSoftware Engineer\n3 years experience in Node.js...' },
             jobRole: { type: 'string', example: 'Backend Developer', maxLength: 200 },
+          },
+        },
+        ATSScoreRequest: {
+          type: 'object',
+          required: ['resumeText'],
+          properties: {
+            resumeText: { type: 'string', minLength: 30, example: 'Software Engineer with React, Node.js, PostgreSQL, and AWS experience...' },
+            jobDescription: { type: 'string', example: 'Looking for a full-stack engineer with React and Node.js experience.' },
+            targetRole: { type: 'string', example: 'Full Stack Developer' },
           },
         },
 
@@ -266,6 +325,91 @@ Token login/register endpoint se milta hai.
           },
         },
       },
+      '/api/ai/company-interview': {
+        post: {
+          tags: ['AI Interview'],
+          summary: 'Generate company-specific interview',
+          description: 'Generate interview questions and tips for a target company and role.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/CompanyInterviewRequest' } } },
+          },
+          responses: {
+            200: { description: 'Company interview generated' },
+            400: { description: 'Validation error' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/ai/jd-interview': {
+        post: {
+          tags: ['AI Interview'],
+          summary: 'Generate interview from job description',
+          description: 'Extract role requirements from a job description and generate custom interview questions.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/JDInterviewRequest' } } },
+          },
+          responses: {
+            200: { description: 'JD-based interview generated' },
+            400: { description: 'Validation error' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/ai/hint': {
+        post: {
+          tags: ['AI Interview'],
+          summary: 'Get interview hint',
+          description: 'Return a directional hint without revealing the full answer.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/HintRequest' } } },
+          },
+          responses: {
+            200: { description: 'Hint generated' },
+            400: { description: 'Validation error' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/ai/behavioral': {
+        post: {
+          tags: ['AI Interview'],
+          summary: 'Generate behavioral interview',
+          description: 'Generate behavioral interview questions for a chosen focus area.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: false,
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/BehavioralInterviewRequest' } } },
+          },
+          responses: {
+            200: { description: 'Behavioral interview generated' },
+            400: { description: 'Validation error' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/ai/behavioral/evaluate': {
+        post: {
+          tags: ['AI Interview'],
+          summary: 'Evaluate behavioral answer',
+          description: 'Evaluate a behavioral answer using a structured STAR-L style breakdown.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/BehavioralEvaluateRequest' } } },
+          },
+          responses: {
+            200: { description: 'Behavioral answer evaluated' },
+            400: { description: 'Validation error' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
       '/api/progress/analytics': {
         get: {
           tags: ['Progress'],
@@ -290,6 +434,42 @@ Token login/register endpoint se milta hai.
           },
         },
       },
+      '/api/progress/streak': {
+        get: {
+          tags: ['Progress'],
+          summary: 'Get streak and XP data',
+          description: 'Return daily streak, XP, and level information.',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: { description: 'Streak data retrieved' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/progress/badges': {
+        get: {
+          tags: ['Progress'],
+          summary: 'Get earned and locked badges',
+          description: 'Return badge progress for the authenticated user.',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: { description: 'Badge data retrieved' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/progress/readiness': {
+        get: {
+          tags: ['Progress'],
+          summary: 'Get interview readiness score',
+          description: 'Return composite readiness score and recommendations.',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: { description: 'Readiness score retrieved' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
       '/api/resume/analyze': {
         post: {
           tags: ['Resume'],
@@ -302,6 +482,62 @@ Token login/register endpoint se milta hai.
           },
           responses: {
             200: { description: 'Resume analyzed' },
+            400: { description: 'Validation error' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/resume/upload': {
+        post: {
+          tags: ['Resume'],
+          summary: 'Upload resume PDF',
+          description: 'Upload a PDF resume and extract text from it.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'multipart/form-data': {
+                schema: {
+                  type: 'object',
+                  required: ['resume'],
+                  properties: {
+                    resume: { type: 'string', format: 'binary' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'Resume text extracted' },
+            400: { description: 'Missing file' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/resume/generate': {
+        post: {
+          tags: ['Resume'],
+          summary: 'Generate resume from progress',
+          description: 'Generate an ATS-friendly resume draft from user interview progress.',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: { description: 'Resume generated' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/resume/ats-score': {
+        post: {
+          tags: ['Resume'],
+          summary: 'Run advanced ATS score',
+          description: 'Score resume text across keyword match, structure, formatting, quantification, and length.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ATSScoreRequest' } } },
+          },
+          responses: {
+            200: { description: 'ATS score generated' },
             400: { description: 'Validation error' },
             401: { description: 'Unauthorized' },
           },

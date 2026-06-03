@@ -55,6 +55,39 @@ export const evaluateAnswerSchema = z.object({
   topic: z.string().min(1, 'Topic dena zaroori hai'),
 });
 
+export const companyInterviewSchema = z.object({
+  company: z.string().min(2, 'Company name is required').max(100),
+  role: z.string().min(2, 'Role is required').max(120),
+  difficulty: z.enum(['easy', 'medium', 'hard']).optional().default('medium'),
+  count: z.number().int().min(1).max(10).optional().default(5),
+});
+
+export const jdInterviewSchema = z.object({
+  jobDescription: z
+    .string()
+    .min(50, 'Please provide a valid job description with at least 50 characters'),
+  count: z.number().int().min(1).max(10).optional().default(5),
+});
+
+export const hintSchema = z.object({
+  question: z.string().min(1, 'Question is required'),
+  partialAnswer: z.string().optional().default(''),
+  topic: z.string().min(1, 'Topic is required'),
+});
+
+export const behavioralInterviewSchema = z.object({
+  focusArea: z
+    .enum(['adaptability', 'ai-era', 'leadership', 'conflict', 'ambiguity', 'general'])
+    .optional()
+    .default('general'),
+  count: z.number().int().min(1).max(10).optional().default(4),
+});
+
+export const behavioralEvaluateSchema = z.object({
+  question: z.string().min(1, 'Question is required'),
+  answer: z.string().min(1, 'Answer is required'),
+});
+
 // Resume analyze karte waqt validation
 export const resumeAnalyzeSchema = z.object({
   resumeText: z
@@ -64,4 +97,10 @@ export const resumeAnalyzeSchema = z.object({
     .string()
     .max(200, 'Job role 200 characters se zyada nahi ho sakta')
     .optional(),
+});
+
+export const atsScoreSchema = z.object({
+  resumeText: z.string().min(30, 'Resume text required hai (min 30 characters)'),
+  jobDescription: z.string().optional(),
+  targetRole: z.string().max(200).optional(),
 });

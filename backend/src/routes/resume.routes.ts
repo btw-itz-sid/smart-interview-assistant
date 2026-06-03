@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { validateBody } from '../middlewares/validate.middleware';
-import { resumeAnalyzeSchema } from '../models/validation';
+import { atsScoreSchema, resumeAnalyzeSchema } from '../models/validation';
 import { analyzeResume, suggestTopics, uploadResume, generateResume, advancedATSScore } from '../controllers/resume.controller';
 import multer from 'multer';
 
@@ -35,6 +35,6 @@ router.post('/upload', upload.single('resume'), uploadResume);
 router.post('/generate', generateResume);
 
 // POST /api/resume/ats-score - Advanced 5-dimension ATS score
-router.post('/ats-score', advancedATSScore);
+router.post('/ats-score', validateBody(atsScoreSchema), advancedATSScore);
 
 export default router;

@@ -35,9 +35,20 @@ const startServer = async (): Promise<void> => {
     logger.info('  POST   /api/ai/evaluate-answer');
     logger.info('  GET    /api/ai/chat-history');
     logger.info('  GET    /api/ai/interview/:id');
+    logger.info('  POST   /api/ai/company-interview');
+    logger.info('  POST   /api/ai/jd-interview');
+    logger.info('  POST   /api/ai/hint');
+    logger.info('  POST   /api/ai/behavioral');
+    logger.info('  POST   /api/ai/behavioral/evaluate');
     logger.info('  GET    /api/progress/analytics');
     logger.info('  GET    /api/progress/topics');
+    logger.info('  GET    /api/progress/streak');
+    logger.info('  GET    /api/progress/badges');
+    logger.info('  GET    /api/progress/readiness');
     logger.info('  POST   /api/resume/analyze');
+    logger.info('  POST   /api/resume/upload');
+    logger.info('  POST   /api/resume/generate');
+    logger.info('  POST   /api/resume/ats-score');
     logger.info('==========================================');
   });
 

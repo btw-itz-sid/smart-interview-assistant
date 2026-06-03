@@ -153,3 +153,37 @@
 /* Dark scrollbar for sidebar */
 .dark-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
 .dark-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+@media print {
+  @page {
+    margin: 14mm;
+    size: A4;
+  }
+
+  html,
+  body,
+  #root {
+    background: #ffffff !important;
+  }
+
+  body {
+    color: #0f172a !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .interview-report {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .interview-report section,
+  .interview-report article {
+    box-shadow: none !important;
+  }
+
+  .interview-report article {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import {
   ChevronDown,
@@ -9,6 +10,7 @@ import {
   MessageSquare,
   BookOpen,
   Presentation,
+  FileText,
 } from 'lucide-react';
 
 function ScoreBadge({ score }: { score: number | null }) {
@@ -19,6 +21,7 @@ function ScoreBadge({ score }: { score: number | null }) {
 }
 
 export default function ChatHistory() {
+  const navigate = useNavigate();
   const [history, setHistory]   = useState<any[]>([]);
   const [loading, setLoading]   = useState(true);
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -29,7 +32,8 @@ export default function ChatHistory() {
     setLoading(true);
     try {
       const res = await api.get('/ai/chat-history');
-      setHistory(res.data.data.reverse());
+      const payload = res.data.data;
+      setHistory(Array.isArray(payload) ? payload : payload?.interviews ?? []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -131,6 +135,17 @@ export default function ChatHistory() {
                 </div>
 
                 <div className="flex items-center gap-3 ml-auto">
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      navigate(`/reports/${interview.interviewId}`);
+                    }}
+                    className="btn-ghost px-3 py-2 text-xs"
+                    title="Open printable interview report"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Report
+                  </button>
                   <ScoreBadge score={interview.score ?? null} />
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-slate-50 transition-transform duration-200 ${expanded === interview.interviewId ? 'rotate-180' : ''}`}>
                     <ChevronDown className="w-4 h-4 text-slate-400" />

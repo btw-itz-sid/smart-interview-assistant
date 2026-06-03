@@ -1,262 +1,240 @@
-<div align="center">
+# Smart Interview Assistant
 
-# 🧠 Smart Interview Assistant
+AI-powered interview preparation platform built with React, Node.js, TypeScript, PostgreSQL, Prisma, and OpenAI.
 
-**AI-Powered Interview Preparation Platform for the 2026 Job Market**
+This project helps candidates practice realistic technical, behavioral, company-specific, and job-description-based interviews. It also includes resume analysis, ATS scoring, progress analytics, streaks, XP, badges, and an interview readiness score.
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://typescriptlang.org)
-[![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react)](https://react.dev)
-[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js)](https://nodejs.org)
-[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?logo=openai)](https://openai.com)
-[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)](https://prisma.io)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+## Why This Project Stands Out
 
-</div>
+Most interview prep tools focus on static question banks. Smart Interview Assistant is designed around real preparation workflows:
 
----
+- Scenario-based AI interview questions instead of generic definitions.
+- AI answer evaluation with score and feedback.
+- Real-time hint support during interviews.
+- STAR-L inspired behavioral interview practice.
+- Company-specific interview preparation.
+- Job-description-to-interview generation.
+- Resume PDF upload and ATS-style scoring.
+- Dashboard analytics, topic progress, readiness score, streaks, XP, and badges.
+- Printable interview report export for saving completed sessions as PDF.
 
-## 🎯 What Makes This Different
-
-Most interview prep tools are static — flashcards, YouTube videos, or basic Q&A bots. **Smart Interview Assistant** is built for the **AI era of 2026**, where interviewers test real engineering judgment, not memorized definitions.
-
-- 🤖 **AI-Era Questions** — No textbook "What is X?" questions. Every question tests production debugging, architecture trade-offs, and AI-literacy
-- 🧠 **Real-Time AI Coach** — Get directional hints during interviews without revealing the answer
-- 🎯 **STAR-L Behavioral Mode** — Dedicated behavioral interview with per-component scoring (Situation/Task/Action/Result/Learning)
-- ⏱️ **Pressure Mode** — Countdown timer with auto-submit to simulate real interview time pressure
-- 📊 **Interview Readiness Score** — Composite 0-100 score across 5 dimensions like a "credit score" for interview prep
-- 🏆 **Gamification** — Daily streaks, XP system, 10 levels, and achievement badges
-- 🏢 **Company-Specific Prep** — Tailored interviews for Google, Amazon, Microsoft, Meta, and more
-- 📄 **JD → Interview Pipeline** — Paste any job description, get a custom-tailored interview
-- 🔍 **5-Dimension ATS Resume Analyzer** — Keyword match, sections, formatting, quantification, and length optimization
-- 📝 **AI Resume Generator** — Industry-level, ATS-optimized resume based on your performance data
-
----
-
-## ✨ Features
-
-### 🔐 Authentication
-- Secure JWT-based login & registration
-- Password hashing with bcryptjs
-- Protected routes on frontend & backend
-
-### 🤖 AI Mock Interview (2026 Edition)
-- Choose any topic (React, Python, System Design, DSA, etc.)
-- Select difficulty (Easy / Medium / Hard)
-- AI generates **real-world, scenario-based** questions — production debugging, scaling, trade-offs
-- AI evaluates answers using **4-dimension scoring**: Technical Accuracy, Practical Depth, Communication, AI-Era Thinking
-- Every question tests skills an AI tool can't fake for you
-
-### 🧠 Real-Time AI Coach (Hint System)
-- Click "Need a Hint?" during any question
-- AI provides directional nudges without revealing the answer
-- Hints tracked per interview — shows how self-sufficient you are
-
-### 🎯 Behavioral Interview (STAR-L Framework)
-- 6 focus areas: Adaptability, AI-Era Judgment, Leadership, Conflict, Ambiguity, General
-- AI evaluates each STAR-L component separately (Situation, Task, Action, Result, Learning — 2 pts each)
-- Visual breakdown bars for each component
-- Tips panel with 2026-era behavioral interview strategies
-
-### ⏱️ Pressure Mode (Timed Interview)
-- Toggle countdown timer: 2, 3, or 5 minutes per question
-- Auto-submit when time expires
-- Visual timer with color changes (green → amber → red pulse)
-- Simulates real interview time pressure
-
-### 🏢 Company-Specific Interview
-- 9 companies: Google, Amazon, Microsoft, Meta, Apple, Netflix, TCS, Infosys, Wipro
-- Company-specific interview patterns and insider tips
-- Role-specific questions
-
-### 📄 JD → Interview Pipeline
-- Paste any job description
-- AI extracts niche skills and requirements
-- Generates custom-tailored interview questions
-
-### 📊 Interview Readiness Score
-- Composite 0-100 readiness metric across 5 dimensions:
-  - **Topic Breadth** (20%): How many topics practiced
-  - **Average Score** (30%): Overall performance
-  - **Consistency** (20%): Daily streak-based
-  - **Volume** (15%): Total interviews completed
-  - **Weak Topics** (15%): Fewer weak areas = better
-- Visual circular gauge with actionable recommendations
-- Labels: Just Starting → Building Foundation → Getting There → Interview Ready → Ready to Crush It
-
-### 🏆 Gamification System
-- **Daily Streaks**: Consecutive practice day tracking
-- **XP System**: Earn XP for interviews, high scores, streaks, and badges
-- **10 Levels**: Progress from Level 1 to Level 10 (5000 XP)
-- **Achievement Badges**: First Interview, 7-Day Warrior, Perfect 10, Resume Pro, and more
-- **Dashboard Widget**: Visual streak counter, XP progress bar, badge showcase
-
-### 🔍 Resume Analyzer
-- **5-Dimension ATS Score** (0-100): Keyword match, section completeness, formatting, quantification, length
-- PDF upload with auto-text extraction
-- AI-powered improvement suggestions
-- Industry-level ATS scoring aligned with 2026 recruiter expectations
-
-### 📝 AI Resume Generator
-- Generates ATS-optimized, industry-level Markdown resume
-- Based on your mock interview performance data
-- Optional target role and company customization
-- 2026 standards: Action + Result format, quantified metrics, AI literacy emphasis
-
-### 📈 Dashboard & Analytics
-- Score trend charts (Recharts)
-- Topic proficiency bars
-- Daily practice suggestion (weakest topic)
-- Recent sessions overview
-
----
-
-## 🛠 Tech Stack
+## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| **Frontend** | React 18, TypeScript, Vite, TailwindCSS, Recharts, Framer Motion |
-| **Backend** | Node.js, Express, TypeScript |
-| **Database** | PostgreSQL + Prisma ORM |
-| **AI Engine** | OpenAI GPT-4o-mini with structured JSON output |
-| **Security** | Helmet.js, express-rate-limit, JWT, bcryptjs |
-| **Logging** | Winston |
-| **Docs** | Swagger UI |
+| --- | --- |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Recharts, Framer Motion |
+| Backend | Node.js, Express, TypeScript |
+| Database | PostgreSQL, Prisma ORM |
+| AI | OpenAI API |
+| Auth | JWT, bcryptjs |
+| Security | Helmet, CORS, express-rate-limit |
+| Docs | Swagger UI |
+| Deployment | Railway backend, Vercel frontend |
 
----
+## Features
 
-## 🚀 Quick Start
+### Authentication
+
+- Register and login.
+- JWT-based protected routes.
+- Password hashing with bcryptjs.
+
+### AI Mock Interviews
+
+- Topic and difficulty based interview generation.
+- Answer evaluation with feedback and score.
+- Interview history and detail view.
+- Hint endpoint for coaching during interviews.
+- Printable interview report with question breakdown, answers, scores, and AI feedback.
+
+### Specialized Interview Modes
+
+- Company-specific interview generation.
+- Job-description-based interview generation.
+- Behavioral interview generation and answer evaluation.
+- Timed pressure-mode experience in the frontend.
+
+### Resume Tools
+
+- PDF resume upload and text extraction.
+- Resume analysis and suggestions.
+- Advanced ATS-style scoring.
+- Interview topic suggestions from resume content.
+- AI resume generation based on user progress.
+
+### Analytics and Gamification
+
+- Dashboard overview.
+- Topic progress.
+- Interview readiness score.
+- Daily streak tracking.
+- XP and level system.
+- Achievement badges.
+
+## Project Structure
+
+```text
+smart-interview-assistant/
+  backend/
+    prisma/
+      schema.prisma
+      migrations/
+    src/
+      config/
+      controllers/
+      docs/
+      middlewares/
+      models/
+      repositories/
+      routes/
+      services/
+      types/
+      utils/
+    package.json
+    railway.json
+  frontend/
+    src/
+      components/
+      context/
+      pages/
+      services/
+    package.json
+    vercel.json
+  README.md
+```
+
+## Local Setup
 
 ### Prerequisites
-- Node.js 18+
-- PostgreSQL database
-- OpenAI API key
 
-### 1. Clone & Install
+- Node.js 18 or newer.
+- PostgreSQL.
+- OpenAI API key.
+
+### Backend
 
 ```bash
-git clone https://github.com/yourusername/smart-interview-assistant.git
-cd smart-interview-assistant
-
-# Backend
 cd backend
-npm install
-
-# Frontend
-cd ../frontend
 npm install
 ```
 
-### 2. Configure Environment
+Create `backend/.env`:
 
-**Backend** (`backend/.env`):
 ```env
-DATABASE_URL="postgresql://postgres:password@localhost:5432/interview_db"
-JWT_SECRET="your-jwt-secret-key"
-OPENAI_API_KEY="sk-your-openai-key"
 PORT=5000
+NODE_ENV=development
+DATABASE_URL="postgresql://postgres:your_password@localhost:5432/interview_db?schema=public"
+JWT_SECRET="replace_with_a_long_random_secret"
+OPENAI_API_KEY="your_openai_api_key_here"
 FRONTEND_URL="http://localhost:5173"
 ```
 
-**Frontend** (`frontend/.env`):
-```env
-VITE_API_URL="http://localhost:5000/api"
-```
-
-### 3. Database Setup
+Initialize Prisma:
 
 ```bash
-cd backend
 npx prisma generate
 npx prisma db push
 ```
 
-### 4. Run
+Run backend:
 
 ```bash
-# Backend (Terminal 1)
-cd backend && npm run dev
-
-# Frontend (Terminal 2)
-cd frontend && npm run dev
+npm run dev
 ```
 
-Open `http://localhost:5173` — register and start practicing!
+Backend health check:
 
----
-
-## 📁 Project Structure
-
-```
-smart-interview-assistant/
-├── backend/
-│   ├── prisma/schema.prisma          # Database models
-│   ├── src/
-│   │   ├── config/                   # DB & env configuration
-│   │   ├── controllers/              # Request handlers
-│   │   ├── middlewares/              # Auth, validation, rate-limit, cache
-│   │   ├── models/                   # Zod schemas & interfaces
-│   │   ├── repositories/            # Database operations
-│   │   │   ├── interview.repository.ts
-│   │   │   ├── progress.repository.ts
-│   │   │   ├── streak.repository.ts  # Gamification logic
-│   │   │   └── user.repository.ts
-│   │   ├── routes/                   # API route definitions
-│   │   ├── services/                 # Business logic
-│   │   │   ├── ai.service.ts         # OpenAI integration (850+ lines)
-│   │   │   ├── interview.service.ts
-│   │   │   ├── resume.service.ts
-│   │   │   └── progress.service.ts
-│   │   └── utils/                    # Logger, error handling, helpers
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── ChatBox.tsx           # Interview UI with hints + timer
-│   │   │   └── Layout.tsx            # Sidebar navigation
-│   │   ├── context/AuthContext.tsx
-│   │   ├── pages/
-│   │   │   ├── Dashboard.tsx         # Analytics + readiness + streak
-│   │   │   ├── Interview.tsx         # Mock interview with pressure mode
-│   │   │   ├── BehavioralInterview.tsx  # STAR-L framework
-│   │   │   ├── CompanyInterview.tsx
-│   │   │   ├── JDInterview.tsx
-│   │   │   ├── ResumeAnalyzer.tsx
-│   │   │   └── ChatHistory.tsx
-│   │   └── services/api.ts
-│   └── package.json
-└── README.md
+```text
+http://localhost:5000/api/health
 ```
 
----
+Swagger docs:
 
-## 🗺 Roadmap
+```text
+http://localhost:5000/api/docs
+```
 
-- [x] AI Mock Interview with real-world questions
-- [x] STAR-L Behavioral Interview mode
-- [x] Real-time AI Coach (hint system)
-- [x] Timed Pressure Mode
-- [x] Interview Readiness Score
-- [x] Streak & XP gamification system
-- [x] Achievement badges
-- [x] Company-specific interviews
-- [x] JD → Interview pipeline
-- [x] 5-dimension ATS resume analyzer
-- [x] AI resume generator
-- [ ] Voice Interview Mode (Whisper API)
-- [ ] Dark Mode (system-preference aware)
-- [ ] Google OAuth
-- [ ] Interview Report PDF export
-- [ ] PWA support
-- [ ] Email notifications
+### Frontend
 
----
+```bash
+cd frontend
+npm install
+```
 
-## 📄 License
+Create `frontend/.env`:
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+```env
+VITE_API_URL=http://localhost:5000/api
+```
 
----
+Run frontend:
 
-<div align="center">
-  <sub>Built with ❤️ for interview preparation in the AI era</sub>
-</div>
+```bash
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:5173
+```
+
+## Quality Checks
+
+Backend:
+
+```bash
+cd backend
+npm run lint
+npm run build
+npm test
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run build
+```
+
+## Deployment
+
+### Backend on Railway
+
+Use the `backend` directory as the service root and set:
+
+```env
+DATABASE_URL=your_production_postgres_url
+JWT_SECRET=your_production_jwt_secret
+OPENAI_API_KEY=your_openai_api_key
+FRONTEND_URL=https://your-vercel-domain.vercel.app
+NODE_ENV=production
+```
+
+Railway uses:
+
+- Build: Nixpacks
+- Start command: `npm start`
+- Health check: `/api/health`
+
+### Frontend on Vercel
+
+Use the `frontend` directory as the project root and set:
+
+```env
+VITE_API_URL=https://your-railway-backend-domain.up.railway.app/api
+```
+
+The included `vercel.json` rewrites routes to `index.html` for React Router support.
+
+## Roadmap
+
+- Google OAuth.
+- Voice interview mode.
+- PWA support.
+- Email reminders.
+- Dark mode with system preference.
+
+## License
+
+MIT License. See [LICENSE](LICENSE).

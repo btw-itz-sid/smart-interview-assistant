@@ -10,6 +10,7 @@ import ResumeAnalyzer from './pages/ResumeAnalyzer';
 import CompanyInterview from './pages/CompanyInterview';
 import JDInterview from './pages/JDInterview';
 import BehavioralInterview from './pages/BehavioralInterview';
+import InterviewReport from './pages/InterviewReport';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -42,6 +43,7 @@ function App() {
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/interview/:id?" element={<ProtectedRoute><Interview /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><ChatHistory /></ProtectedRoute>} />
+      <Route path="/reports/:id" element={<ProtectedRoute><InterviewReport /></ProtectedRoute>} />
       <Route path="/resume" element={<ProtectedRoute><ResumeAnalyzer /></ProtectedRoute>} />
       <Route path="/company-interview" element={<ProtectedRoute><CompanyInterview /></ProtectedRoute>} />
       <Route path="/jd-interview" element={<ProtectedRoute><JDInterview /></ProtectedRoute>} />
