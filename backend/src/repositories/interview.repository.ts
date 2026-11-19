@@ -115,23 +115,3 @@ export const incrementHintsUsed = async (interviewId: number, questionId?: numbe
     });
   }
 };
-
-// Specific user ki specific topic ki interviews dhundho
-export const findInterviewsByTopic = async (userId: number, topic: string) => {
-  const interviews = await prisma.interview.findMany({
-    where: {
-      userId,
-      topic: {
-        contains: topic,
-        mode: 'insensitive',
-      },
-    },
-    include: {
-      questions: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-  return interviews;
-};

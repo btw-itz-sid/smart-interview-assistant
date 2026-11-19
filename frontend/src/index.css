@@ -36,9 +36,6 @@
     @apply bg-white rounded-2xl p-4 border-2 border-game-line;
     box-shadow: 0 3px 0 #E5E5F0;
   }
-  .card-hover { @apply transition-transform duration-150; }
-  .card-hover:hover { transform: translateY(-3px); }
-
   /* ─── Chunky 3D buttons ─── */
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-extrabold uppercase tracking-wide
@@ -54,9 +51,7 @@
   .btn-primary:hover:not(:disabled) { filter: brightness(1.07); }
 
   .btn-green  { @apply btn text-white bg-game-green;  box-shadow: 0 4px 0 #46A302; }
-  .btn-orange { @apply btn text-white bg-game-orange; box-shadow: 0 4px 0 #D97F00; }
-  .btn-blue   { @apply btn text-white bg-game-blue;   box-shadow: 0 4px 0 #1593CF; }
-  .btn-green:hover:not(:disabled), .btn-orange:hover:not(:disabled), .btn-blue:hover:not(:disabled) { filter: brightness(1.07); }
+  .btn-green:hover:not(:disabled) { filter: brightness(1.07); }
 
   /* White button for use on coloured backgrounds */
   .btn-white  { @apply btn bg-white text-game-purple; box-shadow: 0 4px 0 rgba(0, 0, 0, 0.18); }
@@ -135,11 +130,6 @@
   from { transform: scale(0.94); opacity: 0; }
   to   { transform: scale(1);    opacity: 1; }
 }
-@keyframes popIn {
-  0%   { transform: scale(0.6); opacity: 0; }
-  70%  { transform: scale(1.08); opacity: 1; }
-  100% { transform: scale(1); }
-}
 @keyframes floaty {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-8px); }
@@ -151,7 +141,6 @@
 .animate-fade-in  { animation: fadeIn  0.35s ease-out both; }
 .animate-slide-up { animation: slideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .animate-scale-in { animation: scaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
-.animate-pop      { animation: popIn   0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .animate-floaty   { animation: floaty  3.5s ease-in-out infinite; }
 .animate-flicker  { animation: flicker 1.6s ease-in-out infinite; }
 
@@ -164,7 +153,6 @@
 ::-webkit-scrollbar-track   { background: transparent; }
 ::-webkit-scrollbar-thumb   { background: #DCDCEA; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #BDBDD3; }
-.dark-scrollbar::-webkit-scrollbar-thumb { background: #E5E5F0; }
 
 @media print {
   @page {

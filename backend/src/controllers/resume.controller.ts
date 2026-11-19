@@ -6,7 +6,6 @@
 import { Response } from 'express';
 import * as resumeService from '../services/resume.service';
 import * as aiService from '../services/ai.service';
-import { resumeAnalyzeSchema } from '../models/validation';
 import { asyncHandler } from '../utils/asyncHandler';
 import { sendResponse } from '../utils/apiResponse';
 import { AuthRequest } from '../types';
