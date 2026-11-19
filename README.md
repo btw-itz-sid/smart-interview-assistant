@@ -1,6 +1,6 @@
 # Smart Interview Assistant
 
-AI-powered interview preparation platform built with React, Node.js, TypeScript, PostgreSQL, Prisma, and OpenAI.
+AI-powered interview preparation platform built with React, Node.js, TypeScript, PostgreSQL (Neon), Prisma, and OpenAI.
 
 This project helps candidates practice realistic technical, behavioral, company-specific, and job-description-based interviews. It also includes resume analysis, ATS scoring, progress analytics, streaks, XP, badges, and an interview readiness score.
 
@@ -24,8 +24,8 @@ Most interview prep tools focus on static question banks. Smart Interview Assist
 | --- | --- |
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS, Recharts, Framer Motion |
 | Backend | Node.js, Express, TypeScript |
-| Database | PostgreSQL, Prisma ORM |
-| AI | OpenAI API |
+| Database | PostgreSQL on Neon (serverless), Prisma ORM |
+| AI | OpenAI API (`gpt-4o-mini`) |
 | Auth | JWT, bcryptjs |
 | Security | Helmet, CORS, express-rate-limit |
 | Docs | Swagger UI |
@@ -35,7 +35,8 @@ Most interview prep tools focus on static question banks. Smart Interview Assist
 
 ### Authentication
 
-- Register and login.
+- Public landing page for signed-out visitors.
+- Register and login (signed-in users are redirected away from auth pages).
 - JWT-based protected routes.
 - Password hashing with bcryptjs.
 
@@ -53,6 +54,7 @@ Most interview prep tools focus on static question banks. Smart Interview Assist
 - Job-description-based interview generation.
 - Behavioral interview generation and answer evaluation.
 - Timed pressure-mode experience in the frontend.
+- Every mode is saved with its type, difficulty, company, and hints used, so all of them show up in history, reports, and analytics.
 
 ### Resume Tools
 
@@ -70,6 +72,27 @@ Most interview prep tools focus on static question banks. Smart Interview Assist
 - Daily streak tracking.
 - XP and level system.
 - Achievement badges.
+
+## Architecture
+
+The backend follows a layered structure: `routes` → `middlewares` (auth, validation, cache) → `controllers` → `services` (business logic and OpenAI calls) → `repositories` (Prisma queries) → PostgreSQL.
+
+- Request bodies are validated with Zod before they reach controllers.
+- AI responses are parsed defensively (`utils/parseAiJson.ts`), since models sometimes wrap JSON in markdown or prose.
+- Errors are funneled through a single error-handling middleware that returns a consistent JSON shape.
+- Read-heavy analytics endpoints use a short per-user in-memory cache.
+
+## API Overview
+
+Full interactive docs are served at `/api/docs` (Swagger UI). All routes except register, login, and health require a `Bearer` token.
+
+| Group | Endpoints |
+| --- | --- |
+| Auth | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/profile` |
+| Interviews | `POST /api/ai/generate-questions`, `POST /api/ai/evaluate-answer`, `POST /api/ai/hint`, `GET /api/ai/chat-history`, `GET /api/ai/interview/:id` |
+| Interview modes | `POST /api/ai/company-interview`, `POST /api/ai/jd-interview`, `POST /api/ai/behavioral`, `POST /api/ai/behavioral/evaluate` |
+| Progress | `GET /api/progress/analytics`, `/topics`, `/streak`, `/badges`, `/readiness` |
+| Resume | `POST /api/resume/upload`, `/analyze`, `/suggest-topics`, `/ats-score`, `/generate` |
 
 ## Project Structure
 
@@ -108,7 +131,7 @@ smart-interview-assistant/
 ### Prerequisites
 
 - Node.js 18 or newer.
-- PostgreSQL.
+- A PostgreSQL database. The easiest option is a free [Neon](https://neon.tech) project; a local PostgreSQL install also works.
 - OpenAI API key.
 
 ### Backend
@@ -118,22 +141,23 @@ cd backend
 npm install
 ```
 
-Create `backend/.env`:
+Create `backend/.env` (copy `backend/.env.example`):
 
 ```env
 PORT=5000
 NODE_ENV=development
-DATABASE_URL="postgresql://postgres:your_password@localhost:5432/interview_db?schema=public"
+DATABASE_URL="postgresql://user:password@ep-xxxx.region.aws.neon.tech/neondb?sslmode=require"
 JWT_SECRET="replace_with_a_long_random_secret"
 OPENAI_API_KEY="your_openai_api_key_here"
 FRONTEND_URL="http://localhost:5173"
 ```
 
-Initialize Prisma:
+To get the Neon URL: create a project on Neon, click **Connect**, turn off connection pooling, and copy the direct connection string. For a local database, use `postgresql://postgres:your_password@localhost:5432/interview_db?schema=public` instead.
+
+Create the database tables:
 
 ```bash
-npx prisma generate
-npx prisma db push
+npx prisma migrate deploy
 ```
 
 Run backend:
@@ -204,7 +228,7 @@ npm run build
 Use the `backend` directory as the service root and set:
 
 ```env
-DATABASE_URL=your_production_postgres_url
+DATABASE_URL=your_neon_connection_string
 JWT_SECRET=your_production_jwt_secret
 OPENAI_API_KEY=your_openai_api_key
 FRONTEND_URL=https://your-vercel-domain.vercel.app
@@ -214,7 +238,7 @@ NODE_ENV=production
 Railway uses:
 
 - Build: Nixpacks
-- Start command: `npm start`
+- Start command: `npm start` (runs `prisma migrate deploy`, then starts the server)
 - Health check: `/api/health`
 
 ### Frontend on Vercel

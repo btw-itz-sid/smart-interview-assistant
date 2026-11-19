@@ -92,6 +92,7 @@ export const getAnalytics = async (userId: number) => {
     select: {
       id: true,
       topic: true,
+      type: true,
       score: true,
       createdAt: true,
     },

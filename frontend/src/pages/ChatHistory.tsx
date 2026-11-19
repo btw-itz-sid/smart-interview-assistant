@@ -122,7 +122,12 @@ export default function ChatHistory() {
                     <MessageSquare className="w-4 h-4 text-indigo-500" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-800 leading-tight">{interview.topic}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-slate-800 leading-tight">{interview.topic}</h3>
+                      {interview.type && interview.type !== 'general' && (
+                        <span className="badge badge-indigo text-[10px] uppercase tracking-wide">{interview.type}</span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-3 mt-1">
                       <span className="flex items-center gap-1 text-xs text-slate-400">
                         <Calendar className="w-3 h-3" />

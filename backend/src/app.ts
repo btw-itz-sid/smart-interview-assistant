@@ -23,6 +23,7 @@ import { logger } from './utils/logger';
 
 // Swagger docs import karo
 import { swaggerSpec } from './docs/swagger';
+import { config } from './config/env';
 
 // Express app banao
 const app = express();
@@ -40,7 +41,7 @@ app.use(
 );
 
 // CORS — supports FRONTEND_URL env var; multiple origins via comma-separation
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:5174').split(',').map(s => s.trim());
+const allowedOrigins = (process.env.FRONTEND_URL || config.frontendUrl).split(',').map((s) => s.trim());
 app.use(
   cors({
     origin: (origin, cb) => {
@@ -107,7 +108,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
     message: 'Server is running.',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    docs: 'http://localhost:5000/api/docs',
+    docs: '/api/docs',
   });
 });
 

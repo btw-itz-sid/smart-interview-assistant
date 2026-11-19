@@ -6,18 +6,23 @@
 import { prisma } from '../config/database';
 import { logger } from '../utils/logger';
 
-// Nayi interview session create karo jab user interview shuru kare
 export const createInterview = async (data: {
   userId: number;
   topic: string;
+  difficulty?: string;
+  type?: string;
+  company?: string;
 }) => {
   const interview = await prisma.interview.create({
     data: {
       userId: data.userId,
       topic: data.topic,
+      difficulty: data.difficulty || 'medium',
+      type: data.type || 'general',
+      company: data.company,
     },
   });
-  logger.debug(`Nayi interview create hui - Topic: ${data.topic}`);
+  logger.debug(`Interview created — Topic: ${data.topic}, Type: ${data.type || 'general'}`);
   return interview;
 };
 
@@ -95,6 +100,20 @@ export const updateQuestionAnswer = async (
   });
   logger.debug(`Question ${questionId} answer saved — Score: ${score}`);
   return updated;
+};
+
+export const incrementHintsUsed = async (interviewId: number, questionId?: number) => {
+  await prisma.interview.update({
+    where: { id: interviewId },
+    data: { hintsUsed: { increment: 1 } },
+  });
+
+  if (questionId) {
+    await prisma.question.update({
+      where: { id: questionId },
+      data: { hintUsed: true },
+    });
+  }
 };
 
 // Specific user ki specific topic ki interviews dhundho

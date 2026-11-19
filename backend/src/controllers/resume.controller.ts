@@ -11,7 +11,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { sendResponse } from '../utils/apiResponse';
 import { AuthRequest } from '../types';
 import { logger } from '../utils/logger';
-const pdfParse = require('pdf-parse');
+import { extractPdfText } from '../utils/pdf';
 
 // ============================================
 // POST /api/resume/analyze - Resume analyze karo
@@ -61,9 +61,11 @@ export const uploadResume = asyncHandler(
     }
 
     try {
-      // PDF buffer ko text mein parse karo
-      const data = await pdfParse(file.buffer);
-      sendResponse(res, 200, 'Resume parh liya gaya!', { text: data.text });
+      const text = await extractPdfText(file.buffer);
+      if (!text) {
+        return sendResponse(res, 400, 'PDF se text extract nahi ho paya. Kripya text-based PDF upload karein.');
+      }
+      sendResponse(res, 200, 'Resume parh liya gaya!', { text });
     } catch (error) {
       logger.error('PDF parsing fail hua', { error });
       return sendResponse(res, 500, 'PDF file padhne mein samasya aayi.');
@@ -105,6 +107,12 @@ export const advancedATSScore = asyncHandler(
     }
 
     const result = await aiService.computeAdvancedATSScore(resumeText, jobDescription, targetRole);
+
+    if (req.user) {
+      const userId = req.user.userId;
+      await resumeService.saveResumeAnalysis(userId, result, targetRole);
+    }
+
     sendResponse(res, 200, 'Advanced ATS score ready!', result);
   }
 );

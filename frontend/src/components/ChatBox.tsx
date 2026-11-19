@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Bot, User, CheckCircle2, CornerDownLeft,
-  X, ChevronRight, Zap, Lightbulb, Timer, Loader2,
+  X, ChevronRight, Zap, Lightbulb, Timer, Loader2, Mic, FileText,
 } from 'lucide-react';
 
 interface Question { id: number; question: string; }
@@ -50,7 +51,11 @@ export default function ChatBox({
   const [hintLoading, setHintLoading] = useState(false);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [timerActive, setTimerActive] = useState(timerEnabled);
+  const [complete, setComplete] = useState(false);
+  const [listening, setListening] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const navigate = useNavigate();
 
   // Auto-submit when timer expires
   const handleTimerExpire = useCallback(() => {
@@ -72,6 +77,8 @@ export default function ChatBox({
           setCurrentIdx(prev => prev + 1);
           setTimerActive(true);
         }, 1000);
+      } else {
+        setComplete(true);
       }
     }
   }, [input, currentIdx, questions]);
@@ -101,6 +108,8 @@ export default function ChatBox({
         question: questions[currentIdx].question,
         partialAnswer: input,
         topic,
+        interviewId,
+        questionId: questions[currentIdx].id,
       });
       const hint = res.data.data.hint;
       setMessages(prev => [...prev, { role: 'hint', content: hint }]);
@@ -138,10 +147,11 @@ export default function ChatBox({
           setTimerActive(timerEnabled);
         }, 1200);
       } else {
+        setComplete(true);
         setTimeout(() => {
           setMessages(prev => [...prev, {
             role: 'system',
-            content: `Interview complete! ${hintsUsed > 0 ? `Hints used: ${hintsUsed}. ` : ''}Check your dashboard for updated progress.`,
+            content: `Interview complete! ${hintsUsed > 0 ? `Hints used: ${hintsUsed}. ` : ''}Open the report to save this session as PDF.`,
           }]);
         }, 1200);
       }
@@ -158,8 +168,42 @@ export default function ChatBox({
     await handleSubmitAnswer(input.trim());
   };
 
-  const isComplete = currentIdx >= questions.length;
-  const progress   = Math.round(((currentIdx) / questions.length) * 100);
+  const startVoice = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setMessages(prev => [...prev, {
+        role: 'system',
+        content: 'Voice input is not supported in this browser. Try Chrome or Edge.',
+      }]);
+      return;
+    }
+
+    if (listening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN';
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.onresult = (event: any) => {
+      const transcript = event.results?.[0]?.[0]?.transcript;
+      if (transcript) {
+        setInput(prev => (prev ? `${prev} ${transcript}` : transcript));
+      }
+    };
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+    recognitionRef.current = recognition;
+    setListening(true);
+    recognition.start();
+  };
+
+  const isComplete = complete;
+  const progress   = Math.round(((isComplete ? questions.length : currentIdx) / questions.length) * 100);
 
   // Timer color based on remaining time
   const timerColor = timeLeft <= 10 ? '#ef4444' : timeLeft <= 30 ? '#f59e0b' : '#10b981';
@@ -205,6 +249,15 @@ export default function ChatBox({
             Q {Math.min(currentIdx + 1, questions.length)} / {questions.length}
           </div>
 
+          {isComplete && (
+            <button
+              onClick={() => navigate(`/reports/${interviewId}`)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+              style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}
+            >
+              <FileText className="w-3.5 h-3.5" /> View Report
+            </button>
+          )}
           <button
             onClick={onEnd}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors"
@@ -342,7 +395,7 @@ export default function ChatBox({
               }
               disabled={evaluating || isComplete}
               rows={3}
-              className="w-full rounded-xl text-sm text-white placeholder:text-slate-600 outline-none resize-none pr-14 pl-4 py-3.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full rounded-xl text-sm text-white placeholder:text-slate-600 outline-none resize-none pr-24 pl-4 py-3.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: '#0d0f17',
                 border: '1px solid rgba(255,255,255,0.08)',
@@ -356,6 +409,20 @@ export default function ChatBox({
                 e.currentTarget.style.boxShadow   = 'none';
               }}
             />
+            <button
+              type="button"
+              onClick={startVoice}
+              disabled={evaluating || isComplete}
+              className="absolute bottom-3 right-12 w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 disabled:opacity-30"
+              style={{
+                background: listening ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)',
+                color: listening ? '#f87171' : '#94a3b8',
+                border: `1px solid ${listening ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.08)'}`,
+              }}
+              title={listening ? 'Stop listening' : 'Answer with voice'}
+            >
+              <Mic className={`w-4 h-4 ${listening ? 'animate-pulse' : ''}`} />
+            </button>
             <button
               type="submit"
               disabled={!input.trim() || evaluating || isComplete}

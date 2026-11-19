@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import {
   BrainCircuit, Play, Loader2, Send, ChevronRight, Lightbulb,
-  CheckCircle2, AlertCircle, Target, Bot,
+  CheckCircle2, AlertCircle, Target, Bot, FileText,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -26,6 +27,10 @@ export default function BehavioralInterview() {
   const [answer, setAnswer] = useState('');
   const [evaluating, setEvaluating] = useState(false);
   const [results, setResults] = useState<any[]>([]);
+  const navigate = useNavigate();
+
+  const questionText = (q: any) => (typeof q === 'string' ? q : q?.question || '');
+  const questionId = (q: any) => (typeof q === 'string' ? undefined : q?.id);
 
   const startInterview = async () => {
     setLoading(true);
@@ -48,12 +53,15 @@ export default function BehavioralInterview() {
     if (!answer.trim() || evaluating) return;
     setEvaluating(true);
     try {
+      const current = session.questions[currentIdx];
       const res = await api.post('/ai/behavioral/evaluate', {
-        question: session.questions[currentIdx],
+        question: questionText(current),
         answer: answer.trim(),
+        interviewId: session.interviewId,
+        questionId: questionId(current),
       });
       const ev = res.data.data;
-      setResults(prev => [...prev, { question: session.questions[currentIdx], answer: answer.trim(), ...ev }]);
+      setResults(prev => [...prev, { question: questionText(current), answer: answer.trim(), ...ev }]);
       setAnswer('');
       if (currentIdx + 1 < session.questions.length) {
         setCurrentIdx(prev => prev + 1);
@@ -205,7 +213,12 @@ export default function BehavioralInterview() {
           <button onClick={() => { setSession(null); setResults([]); }} className="btn-ghost">
             Try Another Focus
           </button>
-          <button onClick={() => window.location.href = '/'} className="btn-primary">
+          {session.interviewId && (
+            <button onClick={() => navigate(`/reports/${session.interviewId}`)} className="btn-ghost">
+              <FileText className="w-4 h-4" /> View Report
+            </button>
+          )}
+          <button onClick={() => navigate('/')} className="btn-primary">
             Back to Dashboard
           </button>
         </div>
@@ -263,7 +276,7 @@ export default function BehavioralInterview() {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 mb-1.5">Interviewer</p>
               <div className="px-4 py-3.5 rounded-2xl rounded-tl-sm text-sm text-slate-200 leading-relaxed" style={{ background: '#1a1e2e', border: '1px solid rgba(255,255,255,0.07)' }}>
-                {session.questions[currentIdx]}
+                {questionText(session.questions[currentIdx])}
               </div>
             </div>
           </motion.div>

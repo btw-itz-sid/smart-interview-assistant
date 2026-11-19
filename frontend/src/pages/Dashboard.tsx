@@ -550,6 +550,7 @@ export default function Dashboard() {
               return (
                 <div
                   key={item.id || i}
+                  onClick={() => item.id && navigate(`/reports/${item.id}`)}
                   className="flex items-center gap-4 py-3.5 group cursor-pointer hover:bg-slate-50/70 -mx-2 px-2 rounded-xl transition-colors"
                 >
                   <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
@@ -560,7 +561,9 @@ export default function Dashboard() {
                       {item.topic}
                     </p>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {item.date ? new Date(item.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recent'}
+                      {item.createdAt || item.date
+                        ? new Date(item.createdAt || item.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                        : 'Recent'}
                     </p>
                   </div>
                   {score !== null && (

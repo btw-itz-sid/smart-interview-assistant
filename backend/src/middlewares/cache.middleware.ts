@@ -8,6 +8,7 @@ import { Request, Response, NextFunction } from 'express';
 import NodeCache from 'node-cache';
 import { config } from '../config/env';
 import { logger } from '../utils/logger';
+import { AuthRequest } from '../types';
 
 // NodeCache instance banao with configured TTL
 const cache = new NodeCache({
@@ -25,8 +26,9 @@ export const cacheMiddleware = (duration?: number) => {
       return;
     }
 
-    // Cache key banao - URL + query params se unique key banti hai
-    const key = `cache_${req.originalUrl}`;
+    // Key must include the user, otherwise one user's cached data is served to another
+    const userId = (req as AuthRequest).user?.userId ?? 'anon';
+    const key = `cache_${userId}_${req.originalUrl}`;
 
     // Check karo cache mein data hai ya nahi
     const cachedResponse = cache.get(key);

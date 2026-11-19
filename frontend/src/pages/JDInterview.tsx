@@ -5,11 +5,11 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
+import ChatBox from '../components/ChatBox';
 import {
-  FileText, Loader2, Zap, ChevronRight, ArrowLeft,
-  CheckCircle, Tag, AlertTriangle, BarChart2
+  FileText, Loader2, Zap, ArrowLeft,
+  AlertTriangle, BarChart2
 } from 'lucide-react';
 
 const SAMPLE_JD = `We are looking for a Senior Frontend Developer with 3+ years of experience in React.js, TypeScript, and modern CSS frameworks. You will build scalable UI components, work with REST APIs, and collaborate with cross-functional teams.
@@ -20,95 +20,6 @@ Requirements:
 - Strong knowledge of HTML5, CSS3, responsive design
 - Familiarity with Git, CI/CD, and agile workflows
 - Experience with testing (Jest, React Testing Library)`;
-
-function InterviewSession({ data, onReset }: { data: any; onReset: () => void }) {
-  const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<string[]>(Array(data.questions.length).fill(''));
-  const [done, setDone] = useState(false);
-  const navigate = useNavigate();
-
-  const total = data.questions.length;
-
-  return (
-    <div className="max-w-3xl mx-auto space-y-5">
-      {/* Extracted skills chips */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Tag className="w-4 h-4 text-indigo-500" />
-          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Extracted Skills</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {data.extractedSkills?.map((skill: string) => (
-            <span key={skill} className="px-2.5 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">
-              {skill}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {done ? (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-white border border-emerald-200 rounded-xl p-8 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-7 h-7 text-emerald-500" />
-          </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Session Complete!</h2>
-          <p className="text-sm text-slate-500 mb-6">You answered all {total} questions tailored to this JD.</p>
-          <div className="space-y-3 text-left mb-6 max-h-64 overflow-y-auto pr-1">
-            {data.questions.map((q: string, i: number) => (
-              <div key={i} className="bg-slate-50 rounded-lg p-3">
-                <p className="text-xs font-semibold text-slate-500 mb-1">Q{i + 1}. {q}</p>
-                <p className="text-sm text-slate-700">{answers[i] || <span className="text-slate-400 italic">No answer</span>}</p>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-3 justify-center">
-            <button onClick={onReset} className="px-5 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50">
-              Analyze Another JD
-            </button>
-            <button onClick={() => navigate('/')} className="btn-primary text-sm px-5 py-2">Go to Dashboard</button>
-          </div>
-        </motion.div>
-      ) : (
-        <div className="bg-white border border-slate-200 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Question {current + 1} of {total}
-            </span>
-            <div className="flex gap-1">
-              {data.questions.map((_: any, i: number) => (
-                <div key={i} className={`h-1.5 w-6 rounded-full transition-colors ${i <= current ? 'bg-indigo-500' : 'bg-slate-100'}`} />
-              ))}
-            </div>
-          </div>
-
-          <AnimatePresence mode="wait">
-            <motion.div key={current} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <p className="text-base font-semibold text-slate-900 mb-4 leading-relaxed">{data.questions[current]}</p>
-              <textarea
-                className="w-full h-36 bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm text-slate-800 resize-none focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                placeholder="Type your answer here…"
-                value={answers[current]}
-                onChange={e => { const u = [...answers]; u[current] = e.target.value; setAnswers(u); }}
-              />
-            </motion.div>
-          </AnimatePresence>
-
-          <div className="flex items-center justify-between mt-4">
-            <button onClick={() => setCurrent(p => p - 1)} disabled={current === 0}
-              className="text-sm font-medium text-slate-500 hover:text-slate-700 disabled:opacity-30 flex items-center gap-1">
-              <ArrowLeft className="w-4 h-4" /> Back
-            </button>
-            {current < total - 1
-              ? <button onClick={() => setCurrent(p => p + 1)} className="btn-primary text-sm px-5 py-2">Next <ChevronRight className="w-4 h-4" /></button>
-              : <button onClick={() => setDone(true)} className="btn-primary text-sm px-5 py-2 !bg-emerald-600 hover:!bg-emerald-700">Finish <CheckCircle className="w-4 h-4" /></button>
-            }
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function JDInterview() {
   const [jd, setJd] = useState('');
@@ -132,28 +43,16 @@ export default function JDInterview() {
     }
   };
 
-  if (result) return (
-    <div className="min-h-full p-6 md:p-8 max-w-7xl mx-auto">
-      <button onClick={() => setResult(null)} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-6 font-medium">
-        <ArrowLeft className="w-4 h-4" /> Back
-      </button>
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${
-            result.difficulty === 'hard' ? 'text-red-700 bg-red-50 border-red-200' :
-            result.difficulty === 'easy' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
-            'text-amber-700 bg-amber-50 border-amber-200'
-          }`}>{result.difficulty?.toUpperCase()}</span>
-          <span className="text-xs text-slate-400">{count} questions</span>
-        </div>
-        <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
-          {result.roleTitle || 'Custom'} Interview
-        </h1>
-        <p className="text-sm text-slate-500 mt-0.5">Generated from your Job Description</p>
-      </div>
-      <InterviewSession data={result} onReset={() => setResult(null)} />
-    </div>
-  );
+  if (result?.interviewId) {
+    return (
+      <ChatBox
+        interviewId={result.interviewId}
+        topic={result.roleTitle || result.topic || 'JD Interview'}
+        questions={result.questions}
+        onEnd={() => setResult(null)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-full p-6 md:p-8 max-w-7xl mx-auto">

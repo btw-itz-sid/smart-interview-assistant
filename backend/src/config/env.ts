@@ -21,8 +21,8 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || 'default_secret_change_me',
   jwtExpiresIn: '7d', // Token 7 din tak valid rahega
 
-  // OpenAI API key - AI features ke liye zaroori hai
   openaiApiKey: process.env.OPENAI_API_KEY || '',
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:5174',
 
   // Rate limiting config
   rateLimit: {

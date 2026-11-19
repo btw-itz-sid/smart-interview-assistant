@@ -8,6 +8,7 @@ import OpenAI from 'openai';
 import { config } from '../config/env';
 import { logger } from '../utils/logger';
 import { ApiError } from '../utils/ApiError';
+import { extractJson, extractQuestionList } from '../utils/parseAiJson';
 
 // OpenAI client initialize karo API key se
 const openai = new OpenAI({
@@ -50,15 +51,16 @@ RULES:
   5. CROSS-FUNCTIONAL COMMUNICATION: "How would you explain this technical trade-off to a non-technical VP to get budget approval?"
 - Frame questions with realistic context — company names, team sizes, real metrics, production incidents.
 - Include at least one question that tests the candidate's ability to work WITH AI tools while maintaining engineering rigor.
-- Return ONLY a JSON array of strings.`,
+- Return ONLY valid JSON of the form {"questions":["..."]}.`
         },
         {
           role: 'user',
           content: `Generate ${count} extremely rigorous, real-world ${difficulty} level interview questions on: ${topic}. Make them complex enough to truly test a senior engineer's capabilities.`,
         },
       ],
-      temperature: 0.7, // Thoda creative but consistent
+      temperature: 0.7,
       max_tokens: 1000,
+      response_format: { type: 'json_object' },
     });
 
     // Response se content nikalo
@@ -68,20 +70,18 @@ RULES:
       throw new ApiError(500, 'AI se koi response nahi aaya');
     }
 
-    // JSON parse karo - AI ne array format mein diya hoga
-    try {
-      const questions = JSON.parse(content) as string[];
+    const questions = extractQuestionList(content, count);
+    if (questions.length > 0) {
       logger.info(`${questions.length} questions successfully generate ho gaye`);
       return questions;
-    } catch {
-      // Agar JSON parse fail ho toh content ko manually split karo
-      logger.warn('AI response JSON nahi tha, manually parse kar rahe hain');
-      const lines = content
-        .split('\n')
-        .filter((line) => line.trim().length > 0)
-        .map((line) => line.replace(/^\d+[\.\)]\s*/, '').trim());
-      return lines.slice(0, count);
     }
+
+    logger.warn('AI response JSON nahi tha, manually parse kar rahe hain');
+    const lines = content
+      .split('\n')
+      .filter((line) => line.trim().length > 0)
+      .map((line) => line.replace(/^\d+[\.\)]\s*/, '').trim());
+    return lines.slice(0, count);
   } catch (error: any) {
     if (error.message?.includes('429') || error.message?.includes('quota') || error.status === 429) {
       logger.warn('OpenAI quota exceeded. Using mock interview questions.');
@@ -141,8 +141,9 @@ Candidate's Answer: ${answer}
 Please evaluate this answer.`,
         },
       ],
-      temperature: 0.3, // Evaluation mein consistency chahiye
+      temperature: 0.3,
       max_tokens: 1000,
+      response_format: { type: 'json_object' },
     });
 
     const content = response.choices[0]?.message?.content?.trim();
@@ -151,23 +152,18 @@ Please evaluate this answer.`,
       throw new ApiError(500, 'AI se evaluation response nahi aaya');
     }
 
-    // JSON parse karo
-    try {
-      const result = JSON.parse(content) as { score: number; evaluation: string };
-
-      // Score ko 0-10 range mein clamp karo
-      result.score = Math.max(0, Math.min(10, Math.round(result.score)));
-
+    const result = extractJson<{ score: number; evaluation: string }>(content);
+    if (result && typeof result.evaluation === 'string') {
+      result.score = Math.max(0, Math.min(10, Math.round(Number(result.score) || 0)));
       logger.info(`Answer evaluated - Score: ${result.score}/10`);
       return result;
-    } catch {
-      // Agar JSON parse fail ho toh default response bhejo
-      logger.warn('AI evaluation response JSON nahi tha');
-      return {
-        score: 5,
-        evaluation: content, // Raw content hi evaluation mein daal do
-      };
     }
+
+    logger.warn('AI evaluation response JSON nahi tha');
+    return {
+      score: 5,
+      evaluation: content,
+    };
   } catch (error: any) {
     if (error.message?.includes('429') || error.message?.includes('quota') || error.status === 429) {
       logger.warn('OpenAI quota exceeded. Using mock evaluation.');
@@ -213,6 +209,7 @@ Return ONLY valid JSON.`,
       ],
       temperature: 0.4,
       max_tokens: 800,
+      response_format: { type: 'json_object' },
     });
 
     const content = response.choices[0]?.message?.content?.trim();
@@ -221,19 +218,19 @@ Return ONLY valid JSON.`,
       throw new ApiError(500, 'AI se resume analysis nahi aaya');
     }
 
-    try {
-      const result = JSON.parse(content) as {
-        analysis: string;
-        suggestions: string[];
-      };
+    const result = extractJson<{ analysis: string; suggestions: string[] }>(content);
+    if (result?.analysis) {
       logger.info('Resume successfully analyze ho gaya');
-      return result;
-    } catch {
       return {
-        analysis: content,
-        suggestions: ['Resume mein aur detail daalo'],
+        analysis: result.analysis,
+        suggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
       };
     }
+
+    return {
+      analysis: content,
+      suggestions: ['Resume mein aur detail daalo'],
+    };
   } catch (error: any) {
     if (error.message?.includes('429') || error.message?.includes('quota') || error.status === 429) {
       logger.warn('OpenAI quota exceeded. Using mock resume analysis.');
@@ -367,28 +364,34 @@ Return ONLY valid JSON.`,
       ],
       temperature: 0.6,
       max_tokens: 1500,
+      response_format: { type: 'json_object' },
     });
 
     const content = response.choices[0]?.message?.content?.trim();
     if (!content) throw new ApiError(500, 'AI se company interview nahi aaya');
 
-    try {
-      const result = JSON.parse(content);
+    const parsed = extractJson<{ questions?: string[]; tips?: string[]; companyInfo?: string }>(content);
+    const questions = extractQuestionList(content, count);
+    if (questions.length > 0) {
       logger.info(`Company interview questions generated for ${company}`);
-      return result;
-    } catch {
       return {
-        questions: [
-          `Tell me about yourself and why you want to join ${company}.`,
-          `Describe a challenging project you worked on as a ${role}.`,
-          `How do you handle tight deadlines and pressure?`,
-          `What makes you a good fit for ${company}'s culture?`,
-          `Where do you see yourself in 5 years at ${company}?`,
-        ].slice(0, count),
-        tips: [`Research ${company}'s core values before the interview.`, `Practice STAR format for behavioral questions.`],
-        companyInfo: `${company} values strong technical skills and culture alignment.`,
+        questions,
+        tips: parsed?.tips || [`Research ${company}'s core values before the interview.`],
+        companyInfo: parsed?.companyInfo || `${company} values strong technical skills and culture alignment.`,
       };
     }
+
+    return {
+      questions: [
+        `Tell me about yourself and why you want to join ${company}.`,
+        `Describe a challenging project you worked on as a ${role}.`,
+        `How do you handle tight deadlines and pressure?`,
+        `What makes you a good fit for ${company}'s culture?`,
+        `Where do you see yourself in 5 years at ${company}?`,
+      ].slice(0, count),
+      tips: [`Research ${company}'s core values before the interview.`, `Practice STAR format for behavioral questions.`],
+      companyInfo: `${company} values strong technical skills and culture alignment.`,
+    };
   } catch (error: any) {
     if (error.message?.includes('429') || error.status === 429) {
       return {
@@ -438,23 +441,36 @@ Return ONLY valid JSON.`,
       ],
       temperature: 0.4,
       max_tokens: 1500,
+      response_format: { type: 'json_object' },
     });
 
     const content = response.choices[0]?.message?.content?.trim();
     if (!content) throw new ApiError(500, 'AI se JD interview nahi aaya');
 
-    try {
-      const result = JSON.parse(content);
-      logger.info(`JD interview generated - Role: ${result.roleTitle}, Skills: ${result.extractedSkills?.length}`);
-      return result;
-    } catch {
+    const parsed = extractJson<{
+      roleTitle?: string;
+      extractedSkills?: string[];
+      difficulty?: string;
+      questions?: string[];
+    }>(content);
+    const questions = extractQuestionList(content, count);
+
+    if (questions.length > 0) {
+      logger.info(`JD interview generated - Role: ${parsed?.roleTitle}, Skills: ${parsed?.extractedSkills?.length}`);
       return {
-        roleTitle: 'Software Engineer',
-        extractedSkills: ['JavaScript', 'React', 'Node.js'],
-        difficulty: 'medium',
-        questions: Array.from({ length: count }, (_, i) => `Question ${i + 1}: Based on the JD requirements, explain your experience with the listed technologies.`),
+        roleTitle: parsed?.roleTitle || 'Software Engineer',
+        extractedSkills: parsed?.extractedSkills || [],
+        difficulty: parsed?.difficulty || 'medium',
+        questions,
       };
     }
+
+    return {
+      roleTitle: 'Software Engineer',
+      extractedSkills: ['JavaScript', 'React', 'Node.js'],
+      difficulty: 'medium',
+      questions: Array.from({ length: count }, (_, i) => `Question ${i + 1}: Based on the JD requirements, explain your experience with the listed technologies.`),
+    };
   } catch (error: any) {
     if (error.message?.includes('429') || error.status === 429) {
       return {
@@ -567,11 +583,18 @@ Return ONLY valid JSON.`,
       ],
       temperature: 0.2,
       max_tokens: 800,
+      response_format: { type: 'json_object' },
     });
 
     const kwContent = keywordResponse.choices[0]?.message?.content?.trim() || '{}';
-    let kwResult: any = { matchedKeywords: [], missingKeywords: [], aiSuggestions: [] };
-    try { kwResult = JSON.parse(kwContent); } catch { /* use defaults */ }
+    const kwResult = extractJson<{
+      matchedKeywords?: string[];
+      missingKeywords?: string[];
+      aiSuggestions?: string[];
+    }>(kwContent) || { matchedKeywords: [], missingKeywords: [], aiSuggestions: [] };
+    kwResult.matchedKeywords = kwResult.matchedKeywords || [];
+    kwResult.missingKeywords = kwResult.missingKeywords || [];
+    kwResult.aiSuggestions = kwResult.aiSuggestions || [];
 
     const keywordScore = Math.min(40, Math.round(
       (kwResult.matchedKeywords.length / Math.max(1, kwResult.matchedKeywords.length + kwResult.missingKeywords.length)) * 40
@@ -705,25 +728,32 @@ Return ONLY valid JSON.`,
       ],
       temperature: 0.6,
       max_tokens: 1200,
+      response_format: { type: 'json_object' },
     });
 
     const content = response.choices[0]?.message?.content?.trim();
     if (!content) throw new ApiError(500, 'AI response empty');
 
-    try {
-      return JSON.parse(content);
-    } catch {
+    const parsed = extractJson<{ questions?: string[]; framework?: string; tips?: string[] }>(content);
+    const questions = extractQuestionList(content, count);
+    if (questions.length > 0) {
       return {
-        questions: [
-          'Tell me about a time you had to adapt to a major technology shift in your team.',
-          'Describe a situation where an AI tool produced incorrect results in your workflow. How did you handle it?',
-          'Tell me about a decision you made with incomplete information. What was your reasoning framework?',
-          'Describe a project where you had to influence without authority.',
-        ].slice(0, count),
-        framework: 'Use STAR-L: Situation (context), Task (your responsibility), Action (what YOU did), Result (measurable outcome), Learning (what you took away for the future).',
-        tips: ['Quantify every result with numbers', 'Show what YOU did, not the team', 'Always end with what you learned'],
+        questions,
+        framework: parsed?.framework || 'Use STAR-L: Situation, Task, Action, Result, Learning.',
+        tips: parsed?.tips || ['Quantify every result with numbers', 'Show what YOU did, not the team'],
       };
     }
+
+    return {
+      questions: [
+        'Tell me about a time you had to adapt to a major technology shift in your team.',
+        'Describe a situation where an AI tool produced incorrect results in your workflow. How did you handle it?',
+        'Tell me about a decision you made with incomplete information. What was your reasoning framework?',
+        'Describe a project where you had to influence without authority.',
+      ].slice(0, count),
+      framework: 'Use STAR-L: Situation (context), Task (your responsibility), Action (what YOU did), Result (measurable outcome), Learning (what you took away for the future).',
+      tips: ['Quantify every result with numbers', 'Show what YOU did, not the team', 'Always end with what you learned'],
+    };
   } catch (error: any) {
     if (error.message?.includes('429') || error.status === 429) {
       return {
@@ -773,22 +803,31 @@ Return JSON:
       ],
       temperature: 0.3,
       max_tokens: 800,
+      response_format: { type: 'json_object' },
     });
 
     const content = response.choices[0]?.message?.content?.trim();
     if (!content) throw new ApiError(500, 'AI evaluation empty');
 
-    try {
-      const result = JSON.parse(content);
-      result.score = Math.max(0, Math.min(10, Math.round(result.score)));
-      return result;
-    } catch {
-      return {
-        score: 5,
-        evaluation: content,
-        starBreakdown: { situation: 1, task: 1, action: 1, result: 1, learning: 1 },
+    const result = extractJson<{
+      score: number;
+      evaluation: string;
+      starBreakdown: { situation: number; task: number; action: number; result: number; learning: number };
+    }>(content);
+
+    if (result?.evaluation) {
+      result.score = Math.max(0, Math.min(10, Math.round(Number(result.score) || 0)));
+      result.starBreakdown = result.starBreakdown || {
+        situation: 1, task: 1, action: 1, result: 1, learning: 1,
       };
+      return result;
     }
+
+    return {
+      score: 5,
+      evaluation: content,
+      starBreakdown: { situation: 1, task: 1, action: 1, result: 1, learning: 1 },
+    };
   } catch (error: any) {
     if (error.message?.includes('429') || error.status === 429) {
       return {

@@ -75,6 +75,11 @@ test('specialized interview schemas validate deployment API contracts', () => {
   );
 
   assert.equal(
+    behavioralInterviewSchema.parse({ focusArea: 'ai-judgment' }).focusArea,
+    'ai-judgment'
+  );
+
+  assert.equal(
     jdInterviewSchema.safeParse({ jobDescription: 'too short' }).success,
     false
   );

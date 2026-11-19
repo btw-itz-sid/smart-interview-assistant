@@ -100,14 +100,21 @@ export const getInterviewDetail = asyncHandler(
 export const companyInterview = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const { company, role, difficulty = 'medium', count = 5 } = req.body;
+    const userId = req.user!.userId;
 
     if (!company || !role) {
       return sendResponse(res, 400, 'Company and role are both required', null);
     }
 
     logger.info(`Company interview request — ${company} / ${role}`);
-    const result = await aiService.generateCompanyInterview(company, role, difficulty, count);
-    sendResponse(res, 200, 'Company interview is ready!', result);
+    const result = await interviewService.startCompanyInterview(
+      userId,
+      company,
+      role,
+      difficulty,
+      count
+    );
+    sendResponse(res, 201, 'Company interview is ready!', result);
   }
 );
 
@@ -117,14 +124,15 @@ export const companyInterview = asyncHandler(
 export const jdInterview = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const { jobDescription, count = 5 } = req.body;
+    const userId = req.user!.userId;
 
     if (!jobDescription || jobDescription.trim().length < 50) {
       return sendResponse(res, 400, 'Please provide a valid job description (min 50 characters)', null);
     }
 
     logger.info('JD interview request received');
-    const result = await aiService.generateJDInterview(jobDescription, count);
-    sendResponse(res, 200, 'JD-based interview is ready!', result);
+    const result = await interviewService.startJDInterview(userId, jobDescription, count);
+    sendResponse(res, 201, 'JD-based interview is ready!', result);
   }
 );
 
@@ -133,7 +141,7 @@ export const jdInterview = asyncHandler(
 // ============================================
 export const getHint = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    const { question, partialAnswer, topic } = req.body;
+    const { question, partialAnswer, topic, interviewId, questionId } = req.body;
 
     if (!question || !topic) {
       return sendResponse(res, 400, 'Question and topic are required', null);
@@ -141,6 +149,7 @@ export const getHint = asyncHandler(
 
     logger.info('Interview hint request received');
     const result = await aiService.getInterviewHint(question, partialAnswer || '', topic);
+    await interviewService.recordHint(req.user!.userId, interviewId, questionId);
     sendResponse(res, 200, 'Hint generated', result);
   }
 );
@@ -151,10 +160,15 @@ export const getHint = asyncHandler(
 export const behavioralInterview = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const { focusArea = 'general', count = 4 } = req.body;
+    const normalizedFocus = focusArea === 'ai-judgment' ? 'ai-era' : focusArea;
 
-    logger.info(`Behavioral interview request — Focus: ${focusArea}`);
-    const result = await aiService.generateBehavioralInterview(focusArea, count);
-    sendResponse(res, 200, 'Behavioral interview is ready!', result);
+    logger.info(`Behavioral interview request — Focus: ${normalizedFocus}`);
+    const result = await interviewService.startBehavioralInterview(
+      req.user!.userId,
+      normalizedFocus,
+      count
+    );
+    sendResponse(res, 201, 'Behavioral interview is ready!', result);
   }
 );
 
@@ -163,13 +177,25 @@ export const behavioralInterview = asyncHandler(
 // ============================================
 export const evaluateBehavioral = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    const { question, answer } = req.body;
+    const { question, answer, interviewId, questionId } = req.body;
 
     if (!question || !answer) {
       return sendResponse(res, 400, 'Question and answer are required', null);
     }
 
     logger.info('Behavioral evaluation request received');
+
+    if (interviewId && questionId) {
+      const result = await interviewService.submitBehavioralAnswer(
+        req.user!.userId,
+        questionId,
+        interviewId,
+        question,
+        answer
+      );
+      return sendResponse(res, 200, 'Behavioral answer evaluated!', result);
+    }
+
     const result = await aiService.evaluateBehavioralAnswer(question, answer);
     sendResponse(res, 200, 'Behavioral answer evaluated!', result);
   }

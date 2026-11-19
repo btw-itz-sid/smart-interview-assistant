@@ -4,6 +4,7 @@
 // ============================================
 
 import * as aiService from './ai.service';
+import { prisma } from '../config/database';
 import { logger } from '../utils/logger';
 import { ApiError } from '../utils/ApiError';
 import { getScoreGrade, getScoreFeedback } from '../utils/scoreCalculator';
@@ -179,4 +180,43 @@ export const generateNewResume = async (userId: number): Promise<string> => {
 
   const generatedResume = await aiService.generateResume(topicProgressDetails);
   return generatedResume;
+};
+
+export const saveResumeAnalysis = async (
+  userId: number,
+  result: {
+    totalScore: number;
+    grade: string;
+    breakdown: unknown;
+    aiSuggestions: string[];
+  },
+  targetRole?: string
+) => {
+  const breakdown = result.breakdown as {
+    keywordMatch?: { matchedKeywords?: string[] };
+    lengthOptimization?: { wordCount?: number };
+  };
+
+  const saved = await prisma.resumeAnalysis.create({
+    data: {
+      userId,
+      atsScore: result.totalScore,
+      grade: result.grade,
+      breakdown: JSON.stringify(result.breakdown),
+      suggestions: JSON.stringify(result.aiSuggestions || []),
+      keywordCount: breakdown.keywordMatch?.matchedKeywords?.length || 0,
+      wordCount: breakdown.lengthOptimization?.wordCount || 0,
+      targetRole: targetRole || null,
+    },
+  });
+
+  if (result.totalScore >= 80) {
+    try {
+      await prisma.badge.create({ data: { userId, badgeType: 'RESUME_PRO' } });
+    } catch {
+      // already earned
+    }
+  }
+
+  return saved;
 };

@@ -69,6 +69,7 @@ export interface ProgressAnalytics {
   recentInterviews: {
     id: number;
     topic: string;
+    type?: string;
     score: number | null;
     createdAt: Date;
   }[];

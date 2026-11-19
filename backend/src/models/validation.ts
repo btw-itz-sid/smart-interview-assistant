@@ -73,11 +73,13 @@ export const hintSchema = z.object({
   question: z.string().min(1, 'Question is required'),
   partialAnswer: z.string().optional().default(''),
   topic: z.string().min(1, 'Topic is required'),
+  interviewId: z.number().int().positive().optional(),
+  questionId: z.number().int().positive().optional(),
 });
 
 export const behavioralInterviewSchema = z.object({
   focusArea: z
-    .enum(['adaptability', 'ai-era', 'leadership', 'conflict', 'ambiguity', 'general'])
+    .enum(['adaptability', 'ai-era', 'ai-judgment', 'leadership', 'conflict', 'ambiguity', 'general'])
     .optional()
     .default('general'),
   count: z.number().int().min(1).max(10).optional().default(4),
@@ -86,6 +88,8 @@ export const behavioralInterviewSchema = z.object({
 export const behavioralEvaluateSchema = z.object({
   question: z.string().min(1, 'Question is required'),
   answer: z.string().min(1, 'Answer is required'),
+  interviewId: z.number().int().positive().optional(),
+  questionId: z.number().int().positive().optional(),
 });
 
 // Resume analyze karte waqt validation

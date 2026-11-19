@@ -5,11 +5,12 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { api } from '../services/api';
+import ChatBox from '../components/ChatBox';
 import {
-  Building2, ChevronRight, Loader2, Lightbulb,
-  ArrowLeft, CheckCircle, AlertCircle, Info, Sparkles
+  Building2, Loader2, Lightbulb,
+  ArrowLeft, AlertCircle, Sparkles
 } from 'lucide-react';
 
 // ── Company data — no emojis, using initials with brand-like colors ────
@@ -38,103 +39,6 @@ const DIFFICULTIES = [
   { val: 'hard', label: 'Hard', desc: 'Senior / challenging' },
 ];
 
-// ── Session component ─────────────────────────────────────
-function InterviewSession({ data, company, onReset }: { data: any; company: string; onReset: () => void }) {
-  const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<string[]>(Array(data.questions.length).fill(''));
-  const [done, setDone] = useState(false);
-  const navigate = useNavigate();
-  const total = data.questions.length;
-
-  return (
-    <div className="max-w-3xl mx-auto space-y-5">
-      {/* Company insight */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-start gap-3">
-        <Info className="w-4 h-4 text-indigo-500 mt-0.5 flex-shrink-0" />
-        <div>
-          <p className="text-xs font-semibold text-slate-500 mb-0.5">Interview Style</p>
-          <p className="text-sm text-slate-700 leading-relaxed">{data.companyInfo}</p>
-        </div>
-      </div>
-
-      {/* Tips */}
-      {data.tips?.length > 0 && (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-          <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">Preparation Tips</p>
-          <ul className="space-y-1.5">
-            {data.tips.map((tip: string, i: number) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-2 flex-shrink-0" />
-                {tip}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {done ? (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-white border border-slate-200 rounded-xl p-8 text-center">
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-6 h-6 text-emerald-500" />
-          </div>
-          <h2 className="text-lg font-bold text-slate-900 mb-1" style={{ fontFamily: 'Outfit, sans-serif' }}>Session Complete</h2>
-          <p className="text-sm text-slate-500 mb-6">You answered all {total} questions for {company}.</p>
-          <div className="space-y-2.5 text-left mb-6 max-h-60 overflow-y-auto">
-            {data.questions.map((q: string, i: number) => (
-              <div key={i} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                <p className="text-xs font-semibold text-slate-500 mb-1">Q{i + 1}. {q}</p>
-                <p className="text-sm text-slate-700">{answers[i] || <span className="text-slate-400 italic">Skipped</span>}</p>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-3 justify-center">
-            <button onClick={onReset} className="btn-ghost">Try Another Company</button>
-            <button onClick={() => navigate('/')} className="btn-primary">Go to Dashboard</button>
-          </div>
-        </motion.div>
-      ) : (
-        <div className="bg-white border border-slate-200 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-5">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Question {current + 1} of {total}
-            </span>
-            <div className="flex gap-1">
-              {data.questions.map((_: any, i: number) => (
-                <div key={i} className={`h-1.5 w-5 rounded-full transition-colors duration-300 ${i <= current ? 'bg-indigo-500' : 'bg-slate-100'}`} />
-              ))}
-            </div>
-          </div>
-
-          <AnimatePresence mode="wait">
-            <motion.div key={current} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-              <p className="text-base font-semibold text-slate-900 mb-4 leading-relaxed">{data.questions[current]}</p>
-              <textarea
-                className="w-full h-36 bg-slate-50 border border-slate-200 rounded-lg p-3.5 text-sm text-slate-800 resize-none focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-50 transition-all"
-                placeholder="Type your answer here…"
-                value={answers[current]}
-                onChange={e => { const u = [...answers]; u[current] = e.target.value; setAnswers(u); }}
-              />
-            </motion.div>
-          </AnimatePresence>
-
-          <div className="flex items-center justify-between mt-4">
-            <button onClick={() => setCurrent(p => p - 1)} disabled={current === 0}
-              className="text-sm font-medium text-slate-500 hover:text-slate-700 disabled:opacity-30 flex items-center gap-1 transition-colors">
-              <ArrowLeft className="w-4 h-4" /> Previous
-            </button>
-            {current < total - 1
-              ? <button onClick={() => setCurrent(p => p + 1)} className="btn-primary text-sm px-5 py-2">Next <ChevronRight className="w-4 h-4" /></button>
-              : <button onClick={() => setDone(true)} className="btn-primary text-sm px-5 py-2">Finish Session</button>
-            }
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Main Component ─────────────────────────────────────────
 export default function CompanyInterview() {
   const [selectedCompany, setSelectedCompany] = useState('');
   const [role, setRole] = useState('');
@@ -157,20 +61,16 @@ export default function CompanyInterview() {
     } finally { setLoading(false); }
   };
 
-  if (result) return (
-    <div className="min-h-full p-6 md:p-8 max-w-7xl mx-auto">
-      <button onClick={() => setResult(null)} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-6 font-medium transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Back to Setup
-      </button>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
-          {selectedCompany} — {role}
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">{count} questions · {difficulty} difficulty</p>
-      </div>
-      <InterviewSession data={result} company={selectedCompany} onReset={() => setResult(null)} />
-    </div>
-  );
+  if (result?.interviewId) {
+    return (
+      <ChatBox
+        interviewId={result.interviewId}
+        topic={result.topic || `${selectedCompany} — ${role}`}
+        questions={result.questions}
+        onEnd={() => setResult(null)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-full p-6 md:p-8 max-w-7xl mx-auto">
