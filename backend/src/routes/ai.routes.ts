@@ -16,6 +16,7 @@ import {
   jdInterviewSchema,
 } from '../models/validation';
 import { cacheMiddleware } from '../middlewares/cache.middleware';
+import { aiLimiter } from '../middlewares/rateLimit.middleware';
 import {
   generateQuestions,
   evaluateAnswer,
@@ -34,22 +35,22 @@ const router = Router();
 router.use(authMiddleware);
 
 // Core interview flow
-router.post('/generate-questions', validateBody(generateQuestionSchema), generateQuestions);
-router.post('/evaluate-answer', validateBody(evaluateAnswerSchema), evaluateAnswer);
+router.post('/generate-questions', aiLimiter, validateBody(generateQuestionSchema), generateQuestions);
+router.post('/evaluate-answer', aiLimiter, validateBody(evaluateAnswerSchema), evaluateAnswer);
 
 // Chat history with pagination support
 router.get('/chat-history', cacheMiddleware(300), getChatHistory);
 router.get('/interview/:id', getInterviewDetail);
 
 // Company & JD interview modes
-router.post('/company-interview', validateBody(companyInterviewSchema), companyInterview);
-router.post('/jd-interview', validateBody(jdInterviewSchema), jdInterview);
+router.post('/company-interview', aiLimiter, validateBody(companyInterviewSchema), companyInterview);
+router.post('/jd-interview', aiLimiter, validateBody(jdInterviewSchema), jdInterview);
 
 // Real-time interview coaching hint
-router.post('/hint', validateBody(hintSchema), getHint);
+router.post('/hint', aiLimiter, validateBody(hintSchema), getHint);
 
 // Behavioral STAR-L interview mode
-router.post('/behavioral', validateBody(behavioralInterviewSchema), behavioralInterview);
-router.post('/behavioral/evaluate', validateBody(behavioralEvaluateSchema), evaluateBehavioral);
+router.post('/behavioral', aiLimiter, validateBody(behavioralInterviewSchema), behavioralInterview);
+router.post('/behavioral/evaluate', aiLimiter, validateBody(behavioralEvaluateSchema), evaluateBehavioral);
 
 export default router;

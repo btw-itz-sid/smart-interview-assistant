@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { validateBody } from '../middlewares/validate.middleware';
+import { aiLimiter } from '../middlewares/rateLimit.middleware';
 import { atsScoreSchema, resumeAnalyzeSchema } from '../models/validation';
 import { analyzeResume, suggestTopics, uploadResume, generateResume, advancedATSScore } from '../controllers/resume.controller';
 import multer from 'multer';
@@ -23,7 +24,7 @@ const router = Router();
 router.use(authMiddleware);
 
 // POST /api/resume/analyze - Resume analyze karo
-router.post('/analyze', validateBody(resumeAnalyzeSchema), analyzeResume);
+router.post('/analyze', aiLimiter, validateBody(resumeAnalyzeSchema), analyzeResume);
 
 // POST /api/resume/suggest-topics - Resume se interview topics suggest karo
 router.post('/suggest-topics', validateBody(resumeAnalyzeSchema), suggestTopics);
@@ -32,9 +33,9 @@ router.post('/suggest-topics', validateBody(resumeAnalyzeSchema), suggestTopics)
 router.post('/upload', upload.single('resume'), uploadResume);
 
 // POST /api/resume/generate - Auto generate baseline resume
-router.post('/generate', generateResume);
+router.post('/generate', aiLimiter, generateResume);
 
 // POST /api/resume/ats-score - Advanced 5-dimension ATS score
-router.post('/ats-score', validateBody(atsScoreSchema), advancedATSScore);
+router.post('/ats-score', aiLimiter, validateBody(atsScoreSchema), advancedATSScore);
 
 export default router;

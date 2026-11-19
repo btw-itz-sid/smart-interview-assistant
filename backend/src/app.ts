@@ -19,6 +19,7 @@ import interviewRoutes from './routes/interview.routes';
 // Middlewares import karo
 import { errorHandler } from './middlewares/error.middleware';
 import { generalLimiter } from './middlewares/rateLimit.middleware';
+import { clearUserCacheOnWrite } from './middlewares/cache.middleware';
 import { logger } from './utils/logger';
 
 // Swagger docs import karo
@@ -27,6 +28,10 @@ import { config } from './config/env';
 
 // Express app banao
 const app = express();
+
+// Railway sits one proxy hop in front of the app; without this every user shares the
+// proxy's IP and the rate limiters throttle everyone together
+app.set('trust proxy', 1);
 
 // ============================================
 // Global Middlewares - Saari requests pe lagne wale
@@ -62,6 +67,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // General rate limiter - saari routes pe lagega
 app.use(generalLimiter);
+
+// Kisi bhi successful write ke baad us user ka cached data clear karo
+app.use(clearUserCacheOnWrite);
 
 // Request logging middleware - har request log karo
 app.use((req: Request, _res: Response, next) => {

@@ -16,6 +16,8 @@ const cache = new NodeCache({
   checkperiod: config.cache.checkperiod, // Har 1 minute mein cleanup
 });
 
+const userPrefix = (userId: number | string) => `cache_${userId}_`;
+
 // Cache middleware factory function
 // Duration parameter se har route ka apna cache time set kar sakte ho
 export const cacheMiddleware = (duration?: number) => {
@@ -28,7 +30,7 @@ export const cacheMiddleware = (duration?: number) => {
 
     // Key must include the user, otherwise one user's cached data is served to another
     const userId = (req as AuthRequest).user?.userId ?? 'anon';
-    const key = `cache_${userId}_${req.originalUrl}`;
+    const key = `${userPrefix(userId)}${req.originalUrl}`;
 
     // Check karo cache mein data hai ya nahi
     const cachedResponse = cache.get(key);
@@ -46,8 +48,8 @@ export const cacheMiddleware = (duration?: number) => {
     // Original json method ko override karo taaki response cache ho sake
     const originalJson = res.json.bind(res);
     res.json = (body: any) => {
-      // Response ko cache mein store karo
-      cache.set(key, body, duration || config.cache.stdTTL);
+      // Sirf successful response cache karo, warna ek error poore TTL tak dikhta rahega
+      if (res.statusCode < 400) cache.set(key, body, duration || config.cache.stdTTL);
       return originalJson(body);
     };
 
@@ -55,18 +57,22 @@ export const cacheMiddleware = (duration?: number) => {
   };
 };
 
-// Specific key ya pattern ka cache clear karne ka function
-// Jab data update ho toh purana cache clear karna padta hai
-export const clearCache = (pattern?: string): void => {
-  if (pattern) {
-    // Pattern match karne wali saari keys delete karo
-    const keys = cache.keys();
-    const matchingKeys = keys.filter((key) => key.includes(pattern));
-    matchingKeys.forEach((key) => cache.del(key));
-    logger.debug(`Cache cleared for pattern: ${pattern}`);
-  } else {
-    // Poora cache saaf karo
-    cache.flushAll();
-    logger.debug('Poora cache clear ho gaya');
+// Ek user ka saara cached data clear karo
+export const clearUserCache = (userId: number): void => {
+  const prefix = userPrefix(userId);
+  const keys = cache.keys().filter((key) => key.startsWith(prefix));
+  cache.del(keys);
+  logger.debug(`Cache cleared for user ${userId} (${keys.length} keys)`);
+};
+
+// Interview, answer ya resume save hone ke baad history/analytics purane na dikhein.
+// req.user route-level auth middleware set karta hai, isliye response finish hone pe check karte hain.
+export const clearUserCacheOnWrite = (req: Request, res: Response, next: NextFunction): void => {
+  if (req.method !== 'GET') {
+    res.on('finish', () => {
+      const userId = (req as AuthRequest).user?.userId;
+      if (userId && res.statusCode < 400) clearUserCache(userId);
+    });
   }
+  next();
 };
