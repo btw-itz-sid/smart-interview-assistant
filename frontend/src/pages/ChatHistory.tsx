@@ -1,208 +1,250 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import {
-  ChevronDown,
-  RefreshCw,
-  History,
-  Calendar,
-  Star,
-  MessageSquare,
-  BookOpen,
-  Presentation,
-  FileText,
-} from 'lucide-react';
+import PageHeader from '../components/PageHeader';
+import { IconTile } from '../components/Game';
+import { MODES, InterviewType, formatShortDate, modeOf, scoreTone, type GameColor } from '../lib/interviewUi';
+import { AlertCircle, Bot, ChevronDown, FileText, History, Layers, Play, RefreshCw, Search, Star, User } from 'lucide-react';
 
-function ScoreBadge({ score }: { score: number | null }) {
-  if (score === null) return <span className="badge badge-indigo">N/A</span>;
-  if (score >= 7)    return <span className="badge badge-green">{score}/10</span>;
-  if (score >= 4)    return <span className="badge" style={{ background: '#fef3c7', color: '#92400e' }}>{score}/10</span>;
-  return <span className="badge badge-red">{score}/10</span>;
+interface HistoryQuestion { id: number; question: string; answer: string | null; evaluation: string | null; score: number | null }
+interface HistoryItem {
+  interviewId: number;
+  topic: string;
+  type?: string;
+  company?: string | null;
+  difficulty?: string;
+  score: number | null;
+  date: string;
+  questions: HistoryQuestion[];
 }
+
+type Filter = 'all' | InterviewType;
+
+const FILTERS: { value: Filter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  ...(Object.entries(MODES) as [InterviewType, (typeof MODES)[InterviewType]][]).map(([value, m]) => ({ value, label: m.label })),
+];
+
+const ScorePill = ({ score, big = false }: { score: number | null; big?: boolean }) => {
+  if (score === null) {
+    return <span className="text-xs font-black px-2.5 py-1 rounded-xl bg-[#ECECF4] text-game-muted whitespace-nowrap">Not scored</span>;
+  }
+  const t = scoreTone(score);
+  return big ? (
+    <span className="text-base font-black text-white px-3 py-1 rounded-2xl whitespace-nowrap" style={{ background: t.hex, boxShadow: `0 3px 0 ${t.edge}` }}>
+      {score}/10
+    </span>
+  ) : (
+    <span className="text-xs font-black px-2.5 py-1 rounded-xl whitespace-nowrap" style={{ background: t.soft, color: t.textHex }}>{score}/10</span>
+  );
+};
+
+const Skeleton = () => (
+  <div className="space-y-4 animate-pulse">
+    <div className="grid grid-cols-3 gap-4">{[0, 1, 2].map((i) => <div key={i} className="h-24 bg-[#E9E9F3] rounded-3xl" />)}</div>
+    {[0, 1, 2, 3].map((i) => <div key={i} className="h-20 bg-[#E9E9F3] rounded-3xl" />)}
+  </div>
+);
 
 export default function ChatHistory() {
   const navigate = useNavigate();
-  const [history, setHistory]   = useState<any[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [expanded, setExpanded] = useState<number | null>(null);
-
-  useEffect(() => { fetchHistory(); }, []);
+  const [filter, setFilter] = useState<Filter>('all');
+  const [query, setQuery] = useState('');
 
   const fetchHistory = async () => {
     setLoading(true);
+    setError('');
     try {
-      const res = await api.get('/ai/chat-history');
+      const res = await api.get('/ai/chat-history', { params: { limit: 50 } });
       const payload = res.data.data;
       setHistory(Array.isArray(payload) ? payload : payload?.interviews ?? []);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      setError(
+        e.response?.status === 429
+          ? 'Too many requests right now. Wait a minute and try again.'
+          : 'We could not load your interview history.',
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const toggle = (id: number) => setExpanded(expanded === id ? null : id);
+  useEffect(() => { fetchHistory(); }, []);
 
-  if (loading) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center gap-3 p-10">
-        <RefreshCw className="w-6 h-6 text-indigo-400 animate-spin" />
-        <p className="text-sm text-slate-400">Loading your interview history…</p>
-      </div>
+  const stats = useMemo(() => {
+    const scored = history.filter((h) => h.score != null);
+    return {
+      total: history.length,
+      avg: scored.length ? (scored.reduce((a, h) => a + (h.score as number), 0) / scored.length).toFixed(1) : null,
+      topics: new Set(history.map((h) => h.topic)).size,
+    };
+  }, [history]);
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return history.filter(
+      (h) => (filter === 'all' || (h.type || 'general') === filter) && (!q || h.topic.toLowerCase().includes(q)),
     );
-  }
+  }, [history, filter, query]);
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: history.length };
+    for (const h of history) c[h.type || 'general'] = (c[h.type || 'general'] || 0) + 1;
+    return c;
+  }, [history]);
+
+  const summary: { label: string; value: React.ReactNode; icon: React.ElementType; color: GameColor }[] = [
+    { label: 'Sessions', value: stats.total, icon: History, color: 'blue' },
+    { label: 'Avg score', value: stats.avg ? `${stats.avg}` : '—', icon: Star, color: 'yellow' },
+    { label: 'Topics', value: stats.topics, icon: Layers, color: 'purple' },
+  ];
 
   return (
-    <div className="min-h-full p-6 md:p-8 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7 animate-fade-in">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <History className="w-4 h-4 text-indigo-500" />
-            <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              Interview History
-            </h1>
-          </div>
-          <p className="text-slate-500 text-sm">Review your past sessions and AI feedback.</p>
-        </div>
-        <button
-          onClick={fetchHistory}
-          className="btn-ghost text-sm self-start sm:self-auto"
-        >
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
+    <div className="min-h-full p-4 sm:p-6 md:p-8 max-w-5xl mx-auto">
+      <PageHeader
+        icon={History}
+        color="yellow"
+        title="Interview history"
+        subtitle="Replay past battles: your answers and the AI's feedback."
+        actions={
+          <button onClick={fetchHistory} disabled={loading} className="btn-white !py-2.5 !text-[#A67C00]">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </button>
+        }
+      />
 
-      {/* Summary strip */}
-      {history.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 mb-6 animate-slide-up">
-          {[
-            { label: 'Total Sessions', value: history.length,         icon: Presentation },
-            { label: 'Avg. Score',     value: (() => {
-                const scored = history.filter(h => h.score != null);
-                if (!scored.length) return 'N/A';
-                return `${(scored.reduce((a, h) => a + h.score, 0) / scored.length).toFixed(1)}/10`;
-              })(), icon: Star },
-            { label: 'Topics Covered', value: new Set(history.map(h => h.topic)).size, icon: BookOpen },
-          ].map(({ label, value, icon: Icon }) => (
-            <div key={label} className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
-              <Icon className="w-4 h-4 text-indigo-400 mx-auto mb-1.5" />
-              <p className="text-xl font-bold text-slate-800" style={{ fontFamily: 'Outfit, sans-serif' }}>{value}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">{label}</p>
-            </div>
-          ))}
+      {loading ? (
+        <Skeleton />
+      ) : error ? (
+        <div className="card text-center !p-10 animate-scale-in">
+          <div className="inline-flex"><IconTile icon={AlertCircle} color="red" size="lg" /></div>
+          <p className="text-lg font-black text-game-ink mt-4">{error}</p>
+          <button onClick={fetchHistory} className="btn-primary mt-6">
+            <RefreshCw className="w-4 h-4" /> Try again
+          </button>
         </div>
-      )}
-
-      {/* Empty state */}
-      {history.length === 0 ? (
-        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-12 text-center animate-scale-in">
-          <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-4">
-            <History className="w-7 h-7 text-indigo-300" />
-          </div>
-          <h3 className="text-base font-semibold text-slate-700 mb-1">No interviews yet</h3>
-          <p className="text-sm text-slate-400 max-w-xs mx-auto">
-            Complete your first mock interview to start building your history.
+      ) : history.length === 0 ? (
+        <div className="card text-center !p-12 animate-scale-in">
+          <div className="inline-flex animate-floaty"><IconTile icon={History} color="yellow" size="xl" /></div>
+          <h3 className="text-2xl font-black text-game-ink mt-5">No battles yet</h3>
+          <p className="text-sm font-bold text-game-muted max-w-xs mx-auto mt-1">
+            Finish your first mock interview and it will show up here with a full breakdown.
           </p>
+          <button onClick={() => navigate('/interview')} className="btn-green mt-6">
+            <Play className="w-5 h-5" fill="currentColor" /> Start an interview
+          </button>
         </div>
       ) : (
-        <div className="space-y-3 animate-slide-up" style={{ animationDelay: '200ms' }}>
-          {history.map((interview) => (
-            <div
-              key={interview.interviewId}
-              className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md"
-            >
-              {/* Collapsed header */}
-              <div
-                onClick={() => toggle(interview.interviewId)}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 cursor-pointer select-none"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                    <MessageSquare className="w-4 h-4 text-indigo-500" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-slate-800 leading-tight">{interview.topic}</h3>
-                      {interview.type && interview.type !== 'general' && (
-                        <span className="badge badge-indigo text-[10px] uppercase tracking-wide">{interview.type}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="flex items-center gap-1 text-xs text-slate-400">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(interview.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </span>
-                      <span className="text-xs text-slate-300">•</span>
-                      <span className="text-xs text-slate-400">{interview.questions?.length ?? 0} questions</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 ml-auto">
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      navigate(`/reports/${interview.interviewId}`);
-                    }}
-                    className="btn-ghost px-3 py-2 text-xs"
-                    title="Open printable interview report"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Report
-                  </button>
-                  <ScoreBadge score={interview.score ?? null} />
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-slate-50 transition-transform duration-200 ${expanded === interview.interviewId ? 'rotate-180' : ''}`}>
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
-                  </div>
+        <>
+          <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6 animate-slide-up">
+            {summary.map(({ label, value, icon, color }) => (
+              <div key={label} className="card-sm flex items-center gap-3">
+                <IconTile icon={icon} color={color} size="md" className="hidden sm:flex" />
+                <div className="min-w-0">
+                  <p className="text-2xl font-black text-game-ink leading-none">{value}</p>
+                  <p className="text-xs font-extrabold text-game-muted mt-1">{label}</p>
                 </div>
               </div>
+            ))}
+          </div>
 
-              {/* Expanded Q&A */}
-              {expanded === interview.interviewId && (
-                <div className="border-t border-slate-100 px-5 py-5 bg-slate-50/50 space-y-5 animate-fade-in">
-                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Question Breakdown</p>
-                  {interview.questions?.map((q: any, idx: number) => (
-                    <div key={q.id || idx} className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
-                      {/* Question */}
-                      <div className="flex items-start gap-3 mb-3">
-                        <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                          {idx + 1}
-                        </span>
-                        <p className="text-sm font-semibold text-slate-800 leading-snug">{q.question}</p>
-                      </div>
-
-                      {/* Your answer */}
-                      {q.answer ? (
-                        <div className="ml-8 bg-indigo-50/60 border border-indigo-100 rounded-lg p-3 mb-3">
-                          <p className="text-[10px] font-semibold text-indigo-400 uppercase tracking-wide mb-1">Your Answer</p>
-                          <p className="text-xs text-slate-600 leading-relaxed">{q.answer}</p>
-                        </div>
-                      ) : (
-                        <div className="ml-8 mb-3">
-                          <p className="text-xs text-slate-400 italic">Not answered.</p>
-                        </div>
-                      )}
-
-                      {/* AI Evaluation */}
-                      {q.evaluation && (
-                        <div className="ml-8 bg-emerald-50/60 border border-emerald-100 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wide">AI Evaluation</p>
-                            {q.score != null && (
-                              <ScoreBadge score={q.score} />
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">{q.evaluation}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+          <div className="flex flex-col md:flex-row md:items-center gap-3 mb-5 animate-slide-up" style={{ animationDelay: '60ms' }}>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {FILTERS.map((f) => (
+                <button key={f.value} onClick={() => setFilter(f.value)} className={`chip whitespace-nowrap !text-sm !px-3.5 ${filter === f.value ? 'selected' : ''}`}>
+                  {f.label}
+                  <span className={`rounded-full px-1.5 text-[11px] ${filter === f.value ? 'bg-white/25' : 'bg-game-bg'}`}>{counts[f.value] ?? 0}</span>
+                </button>
+              ))}
             </div>
-          ))}
-        </div>
+            <div className="relative md:ml-auto md:w-64">
+              <Search className="w-5 h-5 text-game-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search topics" className="input-field !pl-11 !py-2.5" />
+            </div>
+          </div>
+
+          {visible.length === 0 ? (
+            <div className="card text-center !p-10 text-sm font-bold text-game-muted">No sessions match these filters.</div>
+          ) : (
+            <div className="space-y-4">
+              {visible.map((interview, i) => {
+                const m = modeOf(interview.type);
+                const open = expanded === interview.interviewId;
+                return (
+                  <div
+                    key={interview.interviewId}
+                    className="bg-white border-2 rounded-3xl overflow-hidden animate-slide-up transition-colors"
+                    style={{
+                      animationDelay: `${Math.min(i, 8) * 30}ms`,
+                      borderColor: open ? '#CFC4FF' : '#E5E5F0',
+                      boxShadow: `0 4px 0 ${open ? '#CFC4FF' : '#E5E5F0'}`,
+                    }}
+                  >
+                    <button
+                      onClick={() => setExpanded(open ? null : interview.interviewId)}
+                      className="w-full flex items-center gap-3 sm:gap-4 p-4 sm:p-5 text-left hover:bg-game-bg/60 transition-colors"
+                    >
+                      <IconTile icon={m.icon} color={m.color} size="md" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-black text-game-ink truncate">{interview.topic}</p>
+                        <p className="text-xs font-bold text-game-muted mt-0.5">
+                          {m.label} · {formatShortDate(interview.date)} · {interview.questions?.length ?? 0} questions
+                          {interview.difficulty && <span className="capitalize"> · {interview.difficulty}</span>}
+                        </p>
+                      </div>
+                      <ScorePill score={interview.score ?? null} big />
+                      <ChevronDown className={`w-5 h-5 text-game-muted transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} strokeWidth={2.8} />
+                    </button>
+
+                    {open && (
+                      <div className="border-t-2 border-game-line bg-game-bg p-4 sm:p-5 space-y-3 animate-fade-in">
+                        <div className="flex items-center justify-between">
+                          <p className="eyebrow text-game-muted">Question breakdown</p>
+                          <button onClick={() => navigate(`/reports/${interview.interviewId}`)} className="btn-primary !py-2 !px-3 !text-xs">
+                            <FileText className="w-4 h-4" /> Full report
+                          </button>
+                        </div>
+                        {interview.questions?.map((q, idx) => (
+                          <div key={q.id || idx} className="bg-white rounded-2xl border-2 border-game-line p-4">
+                            <div className="flex items-start gap-3">
+                              <span className="w-8 h-8 rounded-xl bg-game-purple text-white text-sm font-black flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 2px 0 #5B3FD9' }}>
+                                {idx + 1}
+                              </span>
+                              <p className="flex-1 text-sm font-black text-game-ink leading-snug pt-1">{q.question}</p>
+                              <ScorePill score={q.score} />
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-3 mt-3 md:pl-11">
+                              <div className="rounded-xl bg-game-blue-soft border-2 border-[#BDE8FC] p-3">
+                                <p className="flex items-center gap-1 text-[11px] font-black text-game-blue-edge uppercase tracking-wide mb-1">
+                                  <User className="w-3.5 h-3.5" strokeWidth={2.8} /> Your answer
+                                </p>
+                                <p className="text-sm font-semibold text-game-ink leading-relaxed whitespace-pre-wrap">
+                                  {q.answer || <span className="italic text-game-muted">Not answered</span>}
+                                </p>
+                              </div>
+                              <div className="rounded-xl bg-game-green-soft border-2 border-[#C8EFA9] p-3">
+                                <p className="flex items-center gap-1 text-[11px] font-black text-game-green-edge uppercase tracking-wide mb-1">
+                                  <Bot className="w-3.5 h-3.5" strokeWidth={2.8} /> AI feedback
+                                </p>
+                                <p className="text-sm font-semibold text-game-ink leading-relaxed whitespace-pre-wrap">
+                                  {q.evaluation || <span className="italic text-game-muted">No feedback yet</span>}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

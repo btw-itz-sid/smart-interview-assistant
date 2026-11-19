@@ -2,10 +2,10 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Send, Bot, User, CheckCircle2, CornerDownLeft,
-  X, ChevronRight, Zap, Lightbulb, Timer, Loader2, Mic, FileText,
-} from 'lucide-react';
+import { Bot, X, Lightbulb, Timer, Loader2, Mic, FileText, Check, Trophy, Gem, RotateCcw, Home, Info } from 'lucide-react';
+import { IconTile, GameBar, ScoreRing } from './Game';
+import { PALETTE, scoreTone } from '../lib/interviewUi';
+import { getCachedGameStats, refreshGameStats } from '../lib/useGameStats';
 
 interface Question { id: number; question: string; }
 interface Message  { role: 'ai' | 'user' | 'system' | 'hint'; content: string; metadata?: any; }
@@ -38,6 +38,9 @@ function useTimer(seconds: number, onExpire: () => void, active: boolean) {
   return timeLeft;
 }
 
+const praise = (score: number) =>
+  score >= 8 ? 'Excellent!' : score >= 7 ? 'Great answer!' : score >= 5 ? 'Nice try!' : 'Keep going!';
+
 export default function ChatBox({
   interviewId, topic, questions, onEnd, timerEnabled = false, timerSeconds = 180,
 }: {
@@ -53,6 +56,8 @@ export default function ChatBox({
   const [timerActive, setTimerActive] = useState(timerEnabled);
   const [complete, setComplete] = useState(false);
   const [listening, setListening] = useState(false);
+  const [xpEarned, setXpEarned] = useState<number | null>(null);
+  const startXP = useRef(getCachedGameStats()?.totalXP ?? null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const navigate = useNavigate();
@@ -60,15 +65,11 @@ export default function ChatBox({
   // Auto-submit when timer expires
   const handleTimerExpire = useCallback(() => {
     if (input.trim()) {
-      const form = document.createElement('form');
-      const event = new Event('submit', { bubbles: true, cancelable: true });
-      form.dispatchEvent(event);
-      // Auto-submit current answer
       handleSubmitAnswer(input.trim());
     } else {
       setMessages(prev => [...prev, {
         role: 'system',
-        content: '⏱ Time expired! No answer submitted. Moving to next question.',
+        content: 'Time expired. No answer was submitted, moving to the next question.',
         metadata: { score: 0 },
       }]);
       if (currentIdx + 1 < questions.length) {
@@ -88,7 +89,7 @@ export default function ChatBox({
   useEffect(() => {
     if (questions.length > 0) {
       setMessages([
-        { role: 'system', content: `Interview started on **${topic}**. ${timerEnabled ? `⏱ ${timerSeconds}s per question.` : ''} Good luck!` },
+        { role: 'system', content: `Interview started on ${topic}.${timerEnabled ? ` ${timerSeconds}s per question.` : ''} Good luck!` },
         { role: 'ai', content: questions[0].question },
       ]);
       setTimerActive(timerEnabled);
@@ -97,7 +98,15 @@ export default function ChatBox({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, evaluating]);
+  }, [messages, evaluating, complete]);
+
+  // Once finished, read the new XP total so the summary shows what this session earned
+  useEffect(() => {
+    if (!complete) return;
+    refreshGameStats().then((d) => {
+      if (d && startXP.current !== null) setXpEarned(Math.max(0, d.totalXP - startXP.current));
+    });
+  }, [complete]);
 
   // Request a hint from AI
   const requestHint = async () => {
@@ -141,6 +150,7 @@ export default function ChatBox({
       }]);
 
       if (currentIdx + 1 < questions.length) {
+        refreshGameStats();
         setTimeout(() => {
           setMessages(prev => [...prev, { role: 'ai', content: questions[currentIdx + 1].question }]);
           setCurrentIdx(prev => prev + 1);
@@ -148,12 +158,6 @@ export default function ChatBox({
         }, 1200);
       } else {
         setComplete(true);
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            role: 'system',
-            content: `Interview complete! ${hintsUsed > 0 ? `Hints used: ${hintsUsed}. ` : ''}Open the report to save this session as PDF.`,
-          }]);
-        }, 1200);
       }
     } catch {
       setMessages(prev => [...prev, { role: 'system', content: 'Network error while evaluating. Please try again.' }]);
@@ -203,180 +207,194 @@ export default function ChatBox({
   };
 
   const isComplete = complete;
-  const progress   = Math.round(((isComplete ? questions.length : currentIdx) / questions.length) * 100);
+  const answeredCount = messages.filter((m) => m.metadata?.score !== undefined).length;
+  const progress = Math.round((answeredCount / questions.length) * 100);
+  const scores = messages.filter((m) => m.metadata?.score !== undefined).map((m) => m.metadata.score as number);
+  const avg = scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : 0;
 
-  // Timer color based on remaining time
-  const timerColor = timeLeft <= 10 ? '#ef4444' : timeLeft <= 30 ? '#f59e0b' : '#10b981';
-  const timerPulse = timeLeft <= 10;
+  const timerColor = timeLeft <= 10 ? PALETTE.red : timeLeft <= 30 ? PALETTE.orange : PALETTE.green;
 
   return (
-    <div className="flex flex-col h-full" style={{ background: '#0d0f17' }}>
-
-      {/* Header */}
-      <header
-        className="flex items-center justify-between px-5 py-3.5 border-b"
-        style={{ background: '#13151f', borderColor: 'rgba(255,255,255,0.06)' }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <p className="text-white text-sm font-semibold leading-tight">{topic}</p>
-            <p className="text-[11px] text-slate-500 font-medium">Live Interview Session</p>
-          </div>
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Timer */}
-          {timerEnabled && timerActive && !isComplete && (
-            <div
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${timerPulse ? 'animate-pulse' : ''}`}
-              style={{ background: `${timerColor}20`, color: timerColor, border: `1px solid ${timerColor}40` }}
-            >
-              <Timer className="w-3.5 h-3.5" />
-              {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-            </div>
-          )}
-
-          {/* Progress pill */}
-          <div
-            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
-            style={{ background: 'rgba(255,255,255,0.06)', color: '#94a3b8' }}
-          >
-            <ChevronRight className="w-3 h-3 text-indigo-400" />
-            Q {Math.min(currentIdx + 1, questions.length)} / {questions.length}
-          </div>
-
-          {isComplete && (
-            <button
-              onClick={() => navigate(`/reports/${interviewId}`)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}
-            >
-              <FileText className="w-3.5 h-3.5" /> View Report
-            </button>
-          )}
+    <div className="flex flex-col h-full bg-game-bg">
+      {/* Header: lesson-style progress */}
+      <header className="bg-white border-b-2 border-game-line px-3 sm:px-6 py-3">
+        <div className="max-w-3xl mx-auto flex items-center gap-3 sm:gap-4">
           <button
             onClick={onEnd}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+            className="p-2 rounded-xl text-[#B0B0C8] hover:text-game-ink hover:bg-game-bg transition-colors"
+            title="End session"
+            aria-label="End session"
           >
-            <X className="w-3.5 h-3.5" /> End
+            <X className="w-6 h-6" strokeWidth={3} />
           </button>
+          <GameBar value={progress} color="green" height={18} className="flex-1" />
+          <span className="text-sm font-black text-game-muted whitespace-nowrap">
+            {Math.min(answeredCount + (isComplete ? 0 : 1), questions.length)}/{questions.length}
+          </span>
+          {timerEnabled && timerActive && !isComplete && (
+            <span
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm font-black ${timeLeft <= 10 ? 'animate-pulse' : ''}`}
+              style={{ background: timerColor.soft, color: timerColor.text }}
+            >
+              <Timer className="w-4 h-4" strokeWidth={2.8} />
+              {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+            </span>
+          )}
         </div>
       </header>
 
-      {/* Progress bar */}
-      <div className="h-0.5 bg-white/5">
-        <div
-          className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5 max-w-4xl mx-auto w-full">
-        <AnimatePresence>
-          {messages.map((msg, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25 }}
-              className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={`flex max-w-[88%] md:max-w-[78%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start gap-3`}>
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto w-full px-4 py-6 space-y-5">
+          <p className="text-center text-xs font-black uppercase tracking-widest text-game-muted">{topic}</p>
 
-                {/* Avatar */}
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                    msg.role === 'user'   ? 'bg-indigo-600' :
-                    msg.role === 'ai'     ? 'bg-slate-700'  :
-                    msg.role === 'hint'   ? 'bg-amber-800/60' :
-                    'bg-emerald-800/60'
-                  }`}
-                >
-                  {msg.role === 'user'   ? <User         className="w-4 h-4 text-white" />         :
-                   msg.role === 'ai'     ? <Bot           className="w-4 h-4 text-slate-300" />     :
-                   msg.role === 'hint'   ? <Lightbulb     className="w-4 h-4 text-amber-400" />     :
-                                           <CheckCircle2  className="w-4 h-4 text-emerald-400" />}
-                </div>
+          <AnimatePresence>
+            {messages.map((msg, i) => {
+              const isEval = msg.role === 'system' && msg.metadata?.score !== undefined;
 
-                {/* Bubble */}
-                <div>
-                  <p className={`text-[10px] font-semibold uppercase tracking-widest mb-1.5 ${
-                    msg.role === 'user' ? 'text-right text-indigo-400' :
-                    msg.role === 'ai'   ? 'text-slate-500' :
-                    msg.role === 'hint' ? 'text-amber-500' :
-                    'text-emerald-500'
-                  }`}>
-                    {msg.role === 'user' ? 'You' : msg.role === 'ai' ? 'Interviewer' : msg.role === 'hint' ? 'Coach Hint' : 'AI Evaluation'}
-                  </p>
-
-                  {/* Score badge */}
-                  {msg.metadata?.score !== undefined && (
-                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mb-2 ${
-                      msg.metadata.score >= 7 ? 'bg-emerald-500/20 text-emerald-400' :
-                      msg.metadata.score >= 4 ? 'bg-amber-500/20 text-amber-400'   :
-                      'bg-red-500/20 text-red-400'
-                    }`}>
-                      Score: {msg.metadata.score}/10
-                    </div>
-                  )}
-
-                  <div
-                    className={`px-4 py-3.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-                      msg.role === 'user'
-                        ? 'bg-indigo-600 text-white rounded-tr-sm'
-                        : msg.role === 'hint'
-                          ? 'text-amber-200 rounded-tl-sm'
-                          : msg.role === 'ai'
-                            ? 'text-slate-200 rounded-tl-sm'
-                            : 'text-slate-300 rounded-tl-sm'
-                    }`}
-                    style={msg.role !== 'user' ? {
-                      background: msg.role === 'hint' ? '#2a2415' : '#1a1e2e',
-                      border: `1px solid ${msg.role === 'hint' ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.07)'}`,
-                    } : undefined}
+              if (isEval) {
+                const tone = scoreTone(msg.metadata.score);
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 16, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="rounded-3xl border-2 p-5"
+                    style={{ background: tone.soft, borderColor: tone.hex, boxShadow: `0 4px 0 ${tone.hex}` }}
                   >
-                    {msg.content}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-white" style={{ background: tone.hex }}>
+                          <Check className="w-5 h-5" strokeWidth={3.5} />
+                        </div>
+                        <p className="text-xl font-black" style={{ color: tone.textHex }}>{praise(msg.metadata.score)}</p>
+                      </div>
+                      <span
+                        className="text-lg font-black text-white px-3 py-1 rounded-2xl"
+                        style={{ background: tone.hex, boxShadow: `0 3px 0 ${tone.edge}` }}
+                      >
+                        {msg.metadata.score}/10
+                      </span>
+                    </div>
+                    <p className="text-[15px] font-semibold leading-relaxed whitespace-pre-wrap" style={{ color: tone.textHex }}>
+                      {msg.content}
+                    </p>
+                  </motion.div>
+                );
+              }
 
-          {/* Typing indicator */}
-          {evaluating && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-4 h-4 text-slate-400 animate-pulse" />
-                </div>
-                <div
-                  className="flex items-center gap-1.5 px-4 py-3.5 rounded-2xl rounded-tl-sm"
-                  style={{ background: '#1a1e2e', border: '1px solid rgba(255,255,255,0.07)' }}
-                >
+              if (msg.role === 'system') {
+                return (
+                  <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-center">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white border-2 border-game-line px-4 py-1.5 text-xs font-extrabold text-game-muted text-center">
+                      <Info className="w-3.5 h-3.5 flex-shrink-0" />
+                      {msg.content}
+                    </span>
+                  </motion.div>
+                );
+              }
+
+              if (msg.role === 'user') {
+                return (
+                  <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end">
+                    <div
+                      className="max-w-[85%] rounded-3xl rounded-br-lg bg-game-blue text-white px-5 py-3.5 text-[15px] font-semibold leading-relaxed whitespace-pre-wrap"
+                      style={{ boxShadow: '0 4px 0 #1593CF' }}
+                    >
+                      {msg.content}
+                    </div>
+                  </motion.div>
+                );
+              }
+
+              const hint = msg.role === 'hint';
+              return (
+                <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-end gap-3">
+                  <IconTile icon={hint ? Lightbulb : Bot} color={hint ? 'yellow' : 'purple'} size="md" />
+                  <div className="max-w-[85%]">
+                    <p className={`text-xs font-black uppercase tracking-wider mb-1.5 ${hint ? 'text-[#B38600]' : 'text-game-purple'}`}>
+                      {hint ? 'Coach hint' : `Question ${messages.slice(0, i + 1).filter((m) => m.role === 'ai').length}`}
+                    </p>
+                    <div
+                      className={`rounded-3xl rounded-bl-lg border-2 px-5 py-4 whitespace-pre-wrap leading-relaxed ${
+                        hint ? 'bg-game-yellow-soft border-[#FFE58A] text-[#7A5C00] text-[15px] font-semibold' : 'bg-white border-game-line text-game-ink text-base font-bold'
+                      }`}
+                      style={{ boxShadow: hint ? '0 4px 0 #FFE58A' : '0 4px 0 #E5E5F0' }}
+                    >
+                      {msg.content}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+
+            {evaluating && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-end gap-3">
+                <IconTile icon={Bot} color="purple" size="md" />
+                <div className="flex items-center gap-1.5 rounded-3xl rounded-bl-lg bg-white border-2 border-game-line px-5 py-4" style={{ boxShadow: '0 4px 0 #E5E5F0' }}>
                   {[0, 150, 300].map((d) => (
-                    <span key={d} className="w-2 h-2 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                    <span key={d} className="w-2.5 h-2.5 rounded-full bg-game-purple animate-bounce" style={{ animationDelay: `${d}ms` }} />
                   ))}
                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Completion celebration */}
+          {isComplete && !evaluating && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, type: 'spring' }}
+              className="card text-center !p-7 sm:!p-9"
+            >
+              <div className="inline-flex animate-floaty">
+                <IconTile icon={Trophy} color="yellow" size="xl" />
+              </div>
+              <h2 className="text-3xl font-black text-game-ink mt-5">Interview complete!</h2>
+              <p className="text-base font-bold text-game-muted mt-1">{topic}</p>
+
+              <div className="grid grid-cols-3 gap-3 mt-7 max-w-md mx-auto">
+                <div className="rounded-2xl border-2 border-game-line p-3 flex flex-col items-center">
+                  <ScoreRing value={avg} max={10} size={64} stroke={8} color={scoreTone(avg).hex}>
+                    <span className="text-base font-black text-game-ink">{avg}</span>
+                  </ScoreRing>
+                  <p className="text-xs font-black uppercase text-game-muted mt-2">Avg score</p>
+                </div>
+                <div className="rounded-2xl border-2 p-3 flex flex-col items-center justify-center" style={{ borderColor: '#BDE8FC', background: PALETTE.blue.soft }}>
+                  <Gem className="w-8 h-8 text-game-blue" strokeWidth={2.5} />
+                  <p className="text-2xl font-black text-game-blue-edge mt-1">{xpEarned === null ? '…' : `+${xpEarned}`}</p>
+                  <p className="text-xs font-black uppercase text-game-muted">XP earned</p>
+                </div>
+                <div className="rounded-2xl border-2 p-3 flex flex-col items-center justify-center" style={{ borderColor: '#FFE58A', background: PALETTE.yellow.soft }}>
+                  <Lightbulb className="w-8 h-8 text-game-yellow-edge" strokeWidth={2.5} />
+                  <p className="text-2xl font-black text-[#A67C00] mt-1">{hintsUsed}</p>
+                  <p className="text-xs font-black uppercase text-game-muted">Hints used</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-center gap-3 mt-8">
+                <button onClick={() => navigate(`/reports/${interviewId}`)} className="btn-primary">
+                  <FileText className="w-5 h-5" /> View report
+                </button>
+                <button onClick={onEnd} className="btn-ghost">
+                  <RotateCcw className="w-5 h-5" /> Practice again
+                </button>
+                <button onClick={() => navigate('/')} className="btn-ghost">
+                  <Home className="w-5 h-5" /> Dashboard
+                </button>
               </div>
             </motion.div>
           )}
-        </AnimatePresence>
-        <div ref={bottomRef} />
+          <div ref={bottomRef} />
+        </div>
       </div>
 
-      {/* Input */}
-      <div
-        className="p-4 pb-5 md:p-5 md:pb-6 border-t"
-        style={{ background: '#13151f', borderColor: 'rgba(255,255,255,0.06)' }}
-      >
-        <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-          <div className="relative">
+      {/* Answer input */}
+      {!isComplete && (
+        <div className="bg-white border-t-2 border-game-line px-4 py-4">
+          <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -386,75 +404,41 @@ export default function ChatBox({
                   handleSubmit(e);
                 }
               }}
-              placeholder={
-                isComplete && !evaluating
-                  ? 'Interview complete — you can end the session.'
-                  : evaluating
-                    ? 'Evaluating your answer…'
-                    : 'Type your answer… (Enter to send, Shift+Enter for new line)'
-              }
-              disabled={evaluating || isComplete}
+              placeholder={evaluating ? 'Checking your answer…' : 'Type your answer… (Enter to send, Shift+Enter for a new line)'}
+              disabled={evaluating}
               rows={3}
-              className="w-full rounded-xl text-sm text-white placeholder:text-slate-600 outline-none resize-none pr-24 pl-4 py-3.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: '#0d0f17',
-                border: '1px solid rgba(255,255,255,0.08)',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)';
-                e.currentTarget.style.boxShadow   = '0 0 0 3px rgba(99,102,241,0.12)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-                e.currentTarget.style.boxShadow   = 'none';
-              }}
+              className="input-field resize-none disabled:opacity-60"
             />
-            <button
-              type="button"
-              onClick={startVoice}
-              disabled={evaluating || isComplete}
-              className="absolute bottom-3 right-12 w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 disabled:opacity-30"
-              style={{
-                background: listening ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)',
-                color: listening ? '#f87171' : '#94a3b8',
-                border: `1px solid ${listening ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.08)'}`,
-              }}
-              title={listening ? 'Stop listening' : 'Answer with voice'}
-            >
-              <Mic className={`w-4 h-4 ${listening ? 'animate-pulse' : ''}`} />
-            </button>
-            <button
-              type="submit"
-              disabled={!input.trim() || evaluating || isComplete}
-              className="absolute bottom-3 right-3 w-9 h-9 rounded-lg flex items-center justify-center text-white transition-all duration-200 disabled:opacity-30"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}
-            >
-              <Send className="w-4 h-4 -translate-y-px translate-x-px" />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between mt-2.5">
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-600">
-              <CornerDownLeft className="w-3 h-3" />
-              <span>Enter to submit · Shift+Enter for new line</span>
-            </div>
-
-            {/* Hint button */}
-            {!isComplete && !evaluating && (
-              <button
-                type="button"
-                onClick={requestHint}
-                disabled={hintLoading}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-400/80 hover:text-amber-300 transition-colors"
-                style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.15)' }}
-              >
-                {hintLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Lightbulb className="w-3 h-3" />}
-                Need a Hint? {hintsUsed > 0 && `(${hintsUsed})`}
+            <div className="flex items-center justify-between gap-2 mt-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={requestHint}
+                  disabled={hintLoading || evaluating}
+                  className="btn-ghost !px-3 sm:!px-4 !py-2.5 !text-[#B38600]"
+                >
+                  {hintLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lightbulb className="w-5 h-5" />}
+                  <span className="hidden sm:inline">Hint{hintsUsed > 0 && ` (${hintsUsed})`}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={startVoice}
+                  disabled={evaluating}
+                  className={`btn-ghost !px-3 sm:!px-4 !py-2.5 ${listening ? '!text-game-red !border-game-red' : ''}`}
+                  title={listening ? 'Stop listening' : 'Answer with voice'}
+                >
+                  <Mic className={`w-5 h-5 ${listening ? 'animate-pulse' : ''}`} />
+                  <span className="hidden sm:inline">{listening ? 'Listening' : 'Voice'}</span>
+                </button>
+              </div>
+              <button type="submit" disabled={!input.trim() || evaluating} className="btn-green !px-8">
+                {evaluating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" strokeWidth={3} />}
+                Check
               </button>
-            )}
-          </div>
-        </form>
-      </div>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

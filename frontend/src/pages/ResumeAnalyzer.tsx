@@ -1,13 +1,18 @@
 import { useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
+import PageHeader from '../components/PageHeader';
+import { GameBar, IconTile, ScoreRing } from '../components/Game';
+import { PALETTE, RESUME_MODE, type GameColor } from '../lib/interviewUi';
 import {
   AlignLeft,
+  ArrowLeft,
   ArrowRight,
   Award,
   BarChart2,
   Briefcase,
-  CheckCircle,
+  Check,
+  ChevronDown,
   Download,
   Hash,
   Layers,
@@ -19,7 +24,7 @@ import {
   Target,
   Upload,
   Wand2,
-  XCircle,
+  X,
 } from 'lucide-react';
 
 type BuilderMode = 'build' | 'check';
@@ -32,24 +37,9 @@ type Template = {
 };
 
 const templates: Template[] = [
-  {
-    name: 'Cascade',
-    tone: 'Modern',
-    accent: '#3157d5',
-    description: 'Structured sidebar layout for full-stack and product roles.',
-  },
-  {
-    name: 'Crisp',
-    tone: 'Minimal',
-    accent: '#0f766e',
-    description: 'Clean one-column resume for ATS-heavy applications.',
-  },
-  {
-    name: 'Cubic',
-    tone: 'Bold',
-    accent: '#7c3aed',
-    description: 'Confident section blocks for experienced engineers.',
-  },
+  { name: 'Cascade', tone: 'Modern',  accent: '#1CB0F6', description: 'Structured sidebar layout for full-stack and product roles.' },
+  { name: 'Crisp',   tone: 'Minimal', accent: '#58CC02', description: 'Clean one-column resume for ATS-heavy applications.' },
+  { name: 'Cubic',   tone: 'Bold',    accent: '#7C5CFC', description: 'Confident section blocks for experienced engineers.' },
 ];
 
 const sampleBullets = [
@@ -58,80 +48,51 @@ const sampleBullets = [
   'Designed production-ready API validation, Swagger docs, and deployment configuration.',
 ];
 
-function ScoreRing({ score, max = 100, size = 136 }: { score: number; max?: number; size?: number }) {
-  const pct = Math.round((score / max) * 100);
-  const r = 45;
-  const circ = 2 * Math.PI * r;
-  const dashOffset = circ * (1 - pct / 100);
-  const color = pct >= 70 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
-  const grade = pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B+' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 35 ? 'D' : 'F';
+const SCORE_MODEL: [string, number, GameColor][] = [
+  ['Keyword match', 40, 'blue'],
+  ['Sections', 20, 'purple'],
+  ['Formatting', 20, 'orange'],
+  ['Metrics', 10, 'pink'],
+  ['Length', 10, 'green'],
+];
 
-  return (
-    <div className="flex flex-col items-center">
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} viewBox="0 0 100 100" className="-rotate-90">
-          <circle cx="50" cy="50" r={r} fill="none" stroke="#eef2f7" strokeWidth="10" />
-          <circle
-            cx="50"
-            cy="50"
-            r={r}
-            fill="none"
-            stroke={color}
-            strokeWidth="10"
-            strokeDasharray={circ}
-            strokeDashoffset={dashOffset}
-            strokeLinecap="round"
-            style={{ transition: 'stroke-dashoffset 1s ease-out' }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <p className="text-4xl font-extrabold text-slate-950" style={{ fontFamily: 'Outfit,sans-serif' }}>{score}</p>
-          <p className="text-xs text-slate-400 font-medium">/ {max}</p>
-        </div>
-      </div>
-      <span className="mt-2 text-lg font-bold" style={{ color }}>{grade}</span>
-    </div>
-  );
-}
+const pctColor = (pct: number): GameColor => (pct >= 70 ? 'green' : pct >= 40 ? 'orange' : 'red');
+const gradeOf = (pct: number) =>
+  pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B+' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 35 ? 'D' : 'F';
 
 function DimensionBar({
   label,
   score,
   max,
-  icon: Icon,
+  icon,
+  color,
   items,
 }: {
   label: string;
   score: number;
   max: number;
-  icon: any;
+  icon: React.ElementType;
+  color: GameColor;
   items?: { good: string[]; bad: string[] };
 }) {
   const pct = Math.round((score / max) * 100);
-  const color = pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444';
+  const tone = pctColor(pct);
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <div className="rounded-2xl border-2 border-game-line bg-white p-4" style={{ boxShadow: '0 3px 0 #E5E5F0' }}>
       <button onClick={() => setOpen((value) => !value)} className="w-full text-left">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center flex-shrink-0">
-              <Icon className="w-4 h-4 text-slate-500" />
-            </span>
-            <span className="text-sm font-semibold text-slate-800 truncate">{label}</span>
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <IconTile icon={icon} color={color} size="sm" />
+            <span className="text-sm font-black text-game-ink truncate">{label}</span>
           </div>
-          <span className="text-sm font-bold flex-shrink-0" style={{ color }}>{score}/{max}</span>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-sm font-black" style={{ color: PALETTE[tone].text }}>{score}/{max}</span>
+            <ChevronDown className={`w-4 h-4 text-game-muted transition-transform ${open ? 'rotate-180' : ''}`} strokeWidth={2.8} />
+          </div>
         </div>
-        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: color }}
-            initial={{ width: 0 }}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.75, ease: 'easeOut' }}
-          />
-        </div>
+        <GameBar value={pct} color={tone} height={12} />
       </button>
 
       <AnimatePresence>
@@ -143,14 +104,14 @@ function DimensionBar({
             className="overflow-hidden mt-3 space-y-2"
           >
             {items.good.map((text, index) => (
-              <div key={`good-${index}`} className="flex items-start gap-2 text-xs text-emerald-700">
-                <CheckCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-emerald-500" />
+              <div key={`good-${index}`} className="flex items-start gap-2 text-xs font-bold text-game-green-edge">
+                <Check className="w-4 h-4 flex-shrink-0" strokeWidth={3} />
                 {text}
               </div>
             ))}
             {items.bad.map((text, index) => (
-              <div key={`bad-${index}`} className="flex items-start gap-2 text-xs text-red-700">
-                <XCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-red-400" />
+              <div key={`bad-${index}`} className="flex items-start gap-2 text-xs font-bold text-game-red-edge">
+                <X className="w-4 h-4 flex-shrink-0" strokeWidth={3} />
                 {text}
               </div>
             ))}
@@ -163,10 +124,12 @@ function DimensionBar({
 
 function KeywordPill({ text, present }: { text: string; present: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${
-      present ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'
-    }`}>
-      {present ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+    <span
+      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black border-2 ${
+        present ? 'bg-game-green-soft text-game-green-edge border-[#C8EFA9]' : 'bg-game-red-soft text-game-red-edge border-[#FFC2C2]'
+      }`}
+    >
+      {present ? <Check className="w-3.5 h-3.5" strokeWidth={3.5} /> : <X className="w-3.5 h-3.5" strokeWidth={3.5} />}
       {text}
     </span>
   );
@@ -174,60 +137,53 @@ function KeywordPill({ text, present }: { text: string; present: boolean }) {
 
 function ResumePreview({ template }: { template: Template }) {
   return (
-    <div className="relative mx-auto w-full max-w-[390px]">
-      <div className="absolute -left-5 top-10 rounded-2xl bg-white border border-slate-200 shadow-lg p-3 hidden sm:block">
-        <div className="flex items-center gap-2">
-          <Award className="w-4 h-4 text-emerald-500" />
-          <div>
-            <p className="text-xs font-bold text-slate-900">ATS Ready</p>
-            <p className="text-[10px] text-slate-400">Optimized format</p>
-          </div>
+    <div className="relative mx-auto w-full max-w-[300px]">
+      <div className="absolute -left-6 top-8 z-10 rounded-2xl bg-white border-2 border-game-line p-2.5 hidden sm:flex items-center gap-2 animate-floaty" style={{ boxShadow: '0 3px 0 #E5E5F0' }}>
+        <IconTile icon={Award} color="green" size="sm" />
+        <div>
+          <p className="text-xs font-black text-game-ink">ATS ready</p>
+          <p className="text-[10px] font-bold text-game-muted">Optimized format</p>
+        </div>
+      </div>
+      <div className="absolute -right-6 bottom-10 z-10 rounded-2xl bg-white border-2 border-game-line p-2.5 hidden sm:flex items-center gap-2 animate-floaty" style={{ boxShadow: '0 3px 0 #E5E5F0', animationDelay: '1.2s' }}>
+        <IconTile icon={Sparkles} color="purple" size="sm" />
+        <div>
+          <p className="text-xs font-black text-game-ink">AI bullets</p>
+          <p className="text-[10px] font-bold text-game-muted">Role matched</p>
         </div>
       </div>
 
-      <div className="absolute -right-5 bottom-12 rounded-2xl bg-white border border-slate-200 shadow-lg p-3 hidden sm:block">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-indigo-500" />
-          <div>
-            <p className="text-xs font-bold text-slate-900">AI Bullets</p>
-            <p className="text-[10px] text-slate-400">Role matched</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-[18px] shadow-2xl border border-slate-200 overflow-hidden aspect-[0.72]">
+      <div className="bg-white rounded-3xl border-2 border-game-line overflow-hidden aspect-[0.72]" style={{ boxShadow: '0 6px 0 #E5E5F0' }}>
         <div className="h-full grid grid-cols-[34%_1fr]">
-          <aside className="p-5 text-white" style={{ background: template.accent }}>
-            <div className="w-14 h-14 rounded-2xl bg-white/20 mb-5" />
-            <div className="h-3 w-24 bg-white/80 rounded mb-2" />
-            <div className="h-2 w-20 bg-white/40 rounded mb-7" />
+          <aside className="p-4 text-white transition-colors duration-300" style={{ background: template.accent }}>
+            <div className="w-11 h-11 rounded-2xl bg-white/30 mb-4" />
+            <div className="h-2.5 w-20 bg-white/80 rounded-full mb-2" />
+            <div className="h-2 w-16 bg-white/50 rounded-full mb-6" />
             {['CONTACT', 'SKILLS', 'TOOLS'].map((section) => (
-              <div key={section} className="mb-5">
-                <p className="text-[8px] font-bold tracking-[0.2em] mb-2 opacity-80">{section}</p>
+              <div key={section} className="mb-4">
+                <p className="text-[7px] font-black tracking-[0.2em] mb-1.5 opacity-80">{section}</p>
                 <div className="space-y-1.5">
-                  <div className="h-1.5 w-full bg-white/50 rounded" />
-                  <div className="h-1.5 w-5/6 bg-white/40 rounded" />
-                  <div className="h-1.5 w-3/4 bg-white/40 rounded" />
+                  <div className="h-1.5 w-full bg-white/50 rounded-full" />
+                  <div className="h-1.5 w-5/6 bg-white/40 rounded-full" />
                 </div>
               </div>
             ))}
           </aside>
-          <main className="p-6">
-            <div className="mb-5">
-              <div className="h-4 w-36 bg-slate-900 rounded mb-2" />
-              <div className="h-2 w-28 rounded" style={{ background: template.accent }} />
+          <main className="p-4">
+            <div className="mb-4">
+              <div className="h-3.5 w-28 bg-game-ink rounded-full mb-2" />
+              <div className="h-2 w-20 rounded-full" style={{ background: template.accent }} />
             </div>
-            {['SUMMARY', 'EXPERIENCE', 'PROJECTS', 'EDUCATION'].map((section, index) => (
-              <div key={section} className="mb-5">
-                <div className="flex items-center gap-2 mb-2">
+            {['SUMMARY', 'EXPERIENCE', 'PROJECTS', 'EDUCATION'].map((section) => (
+              <div key={section} className="mb-4">
+                <div className="flex items-center gap-1.5 mb-1.5">
                   <div className="h-2 w-2 rounded-full" style={{ background: template.accent }} />
-                  <p className="text-[8px] font-bold tracking-[0.18em] text-slate-500">{section}</p>
+                  <p className="text-[7px] font-black tracking-[0.18em] text-game-muted">{section}</p>
                 </div>
                 <div className="space-y-1.5">
-                  <div className="h-1.5 w-full bg-slate-200 rounded" />
-                  <div className="h-1.5 w-11/12 bg-slate-200 rounded" />
-                  <div className="h-1.5 w-4/5 bg-slate-200 rounded" />
-                  {index === 1 && <div className="h-1.5 w-3/5 bg-slate-200 rounded" />}
+                  <div className="h-1.5 w-full bg-[#ECECF4] rounded-full" />
+                  <div className="h-1.5 w-11/12 bg-[#ECECF4] rounded-full" />
+                  <div className="h-1.5 w-4/5 bg-[#ECECF4] rounded-full" />
                 </div>
               </div>
             ))}
@@ -255,14 +211,7 @@ export default function ResumeAnalyzer() {
     [resumeText]
   );
 
-  const onDrop = useCallback(async (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const file = event.dataTransfer.files[0];
-    if (!file || !file.type.includes('pdf')) {
-      setError('Only PDF files are supported.');
-      return;
-    }
-
+  const uploadPdf = useCallback(async (file: File) => {
     const form = new FormData();
     form.append('resume', file);
 
@@ -279,24 +228,19 @@ export default function ResumeAnalyzer() {
     }
   }, []);
 
+  const onDrop = useCallback(async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    if (!file || !file.type.includes('pdf')) {
+      setError('Only PDF files are supported.');
+      return;
+    }
+    await uploadPdf(file);
+  }, [uploadPdf]);
+
   const handleFileInput = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-
-    const form = new FormData();
-    form.append('resume', file);
-
-    try {
-      setLoading(true);
-      const res = await api.post('/resume/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setResumeText(res.data.data.text);
-      setMode('check');
-      setError('');
-    } catch {
-      setError('PDF upload failed. Paste your resume text instead.');
-    } finally {
-      setLoading(false);
-    }
+    if (file) await uploadPdf(file);
   };
 
   const handleGenerateResume = async () => {
@@ -341,431 +285,372 @@ export default function ResumeAnalyzer() {
 
   if (result) {
     const breakdown = result.breakdown;
+    const tone = PALETTE[pctColor(result.totalScore)];
 
     return (
-      <div className="min-h-full bg-[#f6f8fb]">
-        <div className="max-w-7xl mx-auto px-5 py-7 md:py-9">
-          <button onClick={() => setResult(null)} className="btn-ghost mb-6">
-            <ArrowRight className="w-4 h-4 rotate-180" />
-            Back to builder
-          </button>
+      <div className="min-h-full p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
+        <button onClick={() => setResult(null)} className="btn-ghost mb-6">
+          <ArrowLeft className="w-5 h-5" /> Back to builder
+        </button>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[330px_1fr] gap-6">
-            <aside className="space-y-5">
-              <section className="bg-white border border-slate-200 rounded-2xl p-6 text-center shadow-sm">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-4">ATS Resume Score</p>
-                <ScoreRing score={result.totalScore} />
-                <div className={`mt-4 inline-flex px-3 py-1.5 rounded-lg text-xs font-semibold border ${
-                  result.isATSFriendly ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'
-                }`}>
+        <div className="grid grid-cols-1 lg:grid-cols-[330px_1fr] gap-6">
+          <aside className="space-y-6">
+            <section className="card text-center animate-scale-in">
+              <p className="eyebrow text-game-muted mb-5">ATS resume score</p>
+              <div className="flex justify-center">
+                <ScoreRing value={result.totalScore} max={100} size={150} stroke={16} color={tone.face}>
+                  <span className="text-5xl font-black text-game-ink leading-none">{result.totalScore}</span>
+                  <span className="text-xs font-extrabold text-game-muted">/ 100</span>
+                </ScoreRing>
+              </div>
+              <div className="flex justify-center gap-2 mt-5">
+                <span className="text-lg font-black text-white px-3.5 py-1 rounded-2xl" style={{ background: tone.face, boxShadow: `0 3px 0 ${tone.edge}` }}>
+                  {gradeOf(result.totalScore)}
+                </span>
+                <span className={`badge !text-sm !px-3 ${result.isATSFriendly ? 'badge-green' : 'badge-red'}`}>
                   {result.isATSFriendly ? 'ATS friendly' : 'Needs improvement'}
-                </div>
-              </section>
+                </span>
+              </div>
+            </section>
 
-              <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">AI Suggestions</p>
-                </div>
-                <ul className="space-y-2">
-                  {result.aiSuggestions?.map((suggestion: string, index: number) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                        {index + 1}
-                      </span>
-                      {suggestion}
-                    </li>
+            <section className="card animate-slide-up">
+              <div className="flex items-center gap-2.5 mb-4">
+                <IconTile icon={Sparkles} color="yellow" size="sm" />
+                <p className="section-title">Power-ups</p>
+              </div>
+              <ul className="space-y-3">
+                {result.aiSuggestions?.map((suggestion: string, index: number) => (
+                  <li key={index} className="flex items-start gap-2.5 text-sm font-semibold text-game-ink">
+                    <span className="w-6 h-6 rounded-full bg-game-yellow text-white text-xs font-black flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 2px 0 #E0A800' }}>
+                      {index + 1}
+                    </span>
+                    {suggestion}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </aside>
+
+          <main className="space-y-6">
+            <section className="card animate-slide-up">
+              <div className="flex items-center gap-2.5 mb-5">
+                <IconTile icon={BarChart2} color="blue" size="sm" />
+                <h1 className="section-title">Score breakdown</h1>
+                <span className="text-xs font-bold text-game-muted ml-auto hidden sm:inline">Tap a row for details</span>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <DimensionBar
+                  label="Keyword match"
+                  score={breakdown.keywordMatch.score}
+                  max={40}
+                  icon={Tag}
+                  color="blue"
+                  items={{
+                    good: breakdown.keywordMatch.matchedKeywords.slice(0, 4).map((keyword: string) => `"${keyword}" present`),
+                    bad: breakdown.keywordMatch.missingKeywords.slice(0, 4).map((keyword: string) => `"${keyword}" missing`),
+                  }}
+                />
+                <DimensionBar
+                  label="Section completeness"
+                  score={breakdown.sectionCompleteness.score}
+                  max={20}
+                  icon={Layers}
+                  color="purple"
+                  items={{
+                    good: breakdown.sectionCompleteness.presentSections.map((section: string) => `${section} present`),
+                    bad: breakdown.sectionCompleteness.missingSections.map((section: string) => `${section} missing`),
+                  }}
+                />
+                <DimensionBar
+                  label="Formatting quality"
+                  score={breakdown.formattingQuality.score}
+                  max={20}
+                  icon={AlignLeft}
+                  color="orange"
+                  items={{
+                    good: breakdown.formattingQuality.issues.length === 0 ? ['Readable format detected'] : [],
+                    bad: breakdown.formattingQuality.issues,
+                  }}
+                />
+                <DimensionBar
+                  label="Quantification"
+                  score={breakdown.quantification.score}
+                  max={10}
+                  icon={Hash}
+                  color="pink"
+                  items={{
+                    good: breakdown.quantification.examples.map((example: string) => `Metric found: "${example.trim()}"`),
+                    bad: breakdown.quantification.score < 6 ? ['Add more measurable outcomes to your bullets'] : [],
+                  }}
+                />
+                <DimensionBar
+                  label="Length optimization"
+                  score={breakdown.lengthOptimization.score}
+                  max={10}
+                  icon={Percent}
+                  color="green"
+                  items={{
+                    good: breakdown.lengthOptimization.score >= 8 ? [breakdown.lengthOptimization.feedback] : [],
+                    bad: breakdown.lengthOptimization.score < 8 ? [breakdown.lengthOptimization.feedback] : [],
+                  }}
+                />
+              </div>
+            </section>
+
+            <section className="card animate-slide-up">
+              <div className="flex items-center gap-2.5 mb-5">
+                <IconTile icon={Target} color="green" size="sm" />
+                <h2 className="section-title">Keyword analysis</h2>
+              </div>
+              <div className="mb-5">
+                <p className="eyebrow text-game-green-edge mb-2.5">Present ({breakdown.keywordMatch.matchedKeywords.length})</p>
+                <div className="flex flex-wrap gap-2">
+                  {breakdown.keywordMatch.matchedKeywords.map((keyword: string) => (
+                    <KeywordPill key={keyword} text={keyword} present />
                   ))}
-                </ul>
-              </section>
-            </aside>
-
-            <main className="space-y-5">
-              <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center gap-2 mb-4">
-                  <BarChart2 className="w-4 h-4 text-indigo-500" />
-                  <h1 className="text-lg font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>Score Breakdown</h1>
+                  {breakdown.keywordMatch.matchedKeywords.length === 0 && <span className="text-sm font-bold text-game-muted">None detected</span>}
                 </div>
-                <div className="grid md:grid-cols-2 gap-3">
-                  <DimensionBar
-                    label="Keyword Match"
-                    score={breakdown.keywordMatch.score}
-                    max={40}
-                    icon={Tag}
-                    items={{
-                      good: breakdown.keywordMatch.matchedKeywords.slice(0, 4).map((keyword: string) => `"${keyword}" present`),
-                      bad: breakdown.keywordMatch.missingKeywords.slice(0, 4).map((keyword: string) => `"${keyword}" missing`),
-                    }}
-                  />
-                  <DimensionBar
-                    label="Section Completeness"
-                    score={breakdown.sectionCompleteness.score}
-                    max={20}
-                    icon={Layers}
-                    items={{
-                      good: breakdown.sectionCompleteness.presentSections.map((section: string) => `${section} present`),
-                      bad: breakdown.sectionCompleteness.missingSections.map((section: string) => `${section} missing`),
-                    }}
-                  />
-                  <DimensionBar
-                    label="Formatting Quality"
-                    score={breakdown.formattingQuality.score}
-                    max={20}
-                    icon={AlignLeft}
-                    items={{
-                      good: breakdown.formattingQuality.issues.length === 0 ? ['Readable format detected'] : [],
-                      bad: breakdown.formattingQuality.issues,
-                    }}
-                  />
-                  <DimensionBar
-                    label="Quantification"
-                    score={breakdown.quantification.score}
-                    max={10}
-                    icon={Hash}
-                    items={{
-                      good: breakdown.quantification.examples.map((example: string) => `Metric found: "${example.trim()}"`),
-                      bad: breakdown.quantification.score < 6 ? ['Add more measurable outcomes to your bullets'] : [],
-                    }}
-                  />
-                  <DimensionBar
-                    label="Length Optimization"
-                    score={breakdown.lengthOptimization.score}
-                    max={10}
-                    icon={Percent}
-                    items={{
-                      good: breakdown.lengthOptimization.score >= 8 ? [breakdown.lengthOptimization.feedback] : [],
-                      bad: breakdown.lengthOptimization.score < 8 ? [breakdown.lengthOptimization.feedback] : [],
-                    }}
-                  />
+              </div>
+              <div>
+                <p className="eyebrow text-game-red-edge mb-2.5">Missing ({breakdown.keywordMatch.missingKeywords.length})</p>
+                <div className="flex flex-wrap gap-2">
+                  {breakdown.keywordMatch.missingKeywords.map((keyword: string) => (
+                    <KeywordPill key={keyword} text={keyword} present={false} />
+                  ))}
+                  {breakdown.keywordMatch.missingKeywords.length === 0 && (
+                    <span className="text-sm font-black text-game-green-edge">Strong keyword coverage</span>
+                  )}
                 </div>
-              </section>
-
-              <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center gap-2 mb-4">
-                  <Target className="w-4 h-4 text-indigo-500" />
-                  <h2 className="text-sm font-bold text-slate-900">Keyword Analysis</h2>
-                </div>
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.16em] mb-2">
-                    Present ({breakdown.keywordMatch.matchedKeywords.length})
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {breakdown.keywordMatch.matchedKeywords.map((keyword: string) => (
-                      <KeywordPill key={keyword} text={keyword} present />
-                    ))}
-                    {breakdown.keywordMatch.matchedKeywords.length === 0 && <span className="text-xs text-slate-400">None detected</span>}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.16em] mb-2">
-                    Missing ({breakdown.keywordMatch.missingKeywords.length})
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {breakdown.keywordMatch.missingKeywords.map((keyword: string) => (
-                      <KeywordPill key={keyword} text={keyword} present={false} />
-                    ))}
-                    {breakdown.keywordMatch.missingKeywords.length === 0 && (
-                      <span className="text-xs text-emerald-600 font-semibold">Strong keyword coverage</span>
-                    )}
-                  </div>
-                </div>
-              </section>
-            </main>
-          </div>
+              </div>
+            </section>
+          </main>
         </div>
       </div>
     );
   }
 
+  const tabs: { id: BuilderMode; label: string; desc: string; icon: React.ElementType; color: GameColor }[] = [
+    { id: 'build', label: 'Build resume', desc: 'AI draft from your interviews', icon: PenLine,   color: 'purple' },
+    { id: 'check', label: 'ATS checker',  desc: 'Score against a job description', icon: BarChart2, color: 'green' },
+  ];
+
   return (
-    <div className="min-h-full bg-[#f6f8fb]">
-      <section className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-5 py-10 md:py-14 grid lg:grid-cols-[1fr_470px] gap-10 items-center">
+    <div className="min-h-full p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
+      <PageHeader
+        icon={RESUME_MODE.icon}
+        color={RESUME_MODE.color}
+        title="Resume analyzer"
+        tag={<><Award className="w-3 h-3" /> Resume Pro medal at 80+</>}
+        subtitle="Generate a resume from your interviews, or score your own against a job description."
+        actions={
+          <button onClick={handleGenerateResume} disabled={generating} className="btn-white !text-game-green-edge">
+            {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
+            Generate
+          </button>
+        }
+      />
+
+      {/* Template picker */}
+      <section className="card mb-6 animate-slide-up">
+        <div className="grid lg:grid-cols-[1fr_300px] gap-8 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold mb-5">
-              <Sparkles className="w-3.5 h-3.5" />
-              AI resume builder for interview-ready candidates
-            </div>
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-950 leading-[1.02]" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              Build a resume that gets you into interviews.
-            </h1>
-            <p className="text-base md:text-lg text-slate-600 mt-5 max-w-2xl leading-relaxed">
-              Generate a polished resume from your interview performance, upload an existing PDF, and score it against the job description before you apply.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 mt-7">
-              <button onClick={handleGenerateResume} disabled={generating} className="btn-primary py-3 px-5">
-                {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                Generate Resume
-              </button>
-              <button onClick={() => setMode('check')} className="btn-ghost py-3 px-5">
-                <Upload className="w-4 h-4" />
-                Check Existing Resume
-              </button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 mt-8 max-w-xl">
-              {[
-                ['5-part', 'ATS scoring'],
-                ['PDF', 'upload support'],
-                ['AI', 'resume draft'],
-              ].map(([value, label]) => (
-                <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xl font-extrabold text-slate-950" style={{ fontFamily: 'Outfit, sans-serif' }}>{value}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <ResumePreview template={selectedTemplate} />
-        </div>
-      </section>
-
-      <section className="max-w-7xl mx-auto px-5 py-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-500">Templates</p>
-            <h2 className="text-2xl font-bold text-slate-950 mt-1" style={{ fontFamily: 'Outfit, sans-serif' }}>Choose your resume style</h2>
-          </div>
-          <p className="text-sm text-slate-500 max-w-xl">
-            Pick a visual direction, then generate or check your content inside the builder.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-4">
-          {templates.map((template) => (
-            <button
-              key={template.name}
-              onClick={() => setSelectedTemplate(template)}
-              className={`text-left rounded-2xl border bg-white p-4 transition-all hover:shadow-md ${
-                selectedTemplate.name === template.name ? 'border-indigo-300 ring-4 ring-indigo-50' : 'border-slate-200'
-              }`}
-            >
-              <div className="h-28 rounded-xl border border-slate-200 bg-slate-50 p-3 mb-4">
-                <div className="h-full grid grid-cols-[32%_1fr] gap-3">
-                  <div className="rounded-lg" style={{ background: template.accent }} />
-                  <div className="space-y-2 py-1">
-                    <div className="h-2.5 w-2/3 rounded bg-slate-700" />
-                    <div className="h-1.5 w-1/2 rounded" style={{ background: template.accent }} />
-                    <div className="h-1.5 w-full rounded bg-slate-200" />
-                    <div className="h-1.5 w-5/6 rounded bg-slate-200" />
-                    <div className="h-1.5 w-3/4 rounded bg-slate-200" />
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-base font-bold text-slate-950">{template.name}</p>
-                  <p className="text-xs font-semibold text-slate-400">{template.tone}</p>
-                </div>
-                {selectedTemplate.name === template.name && <CheckCircle className="w-5 h-5 text-indigo-500" />}
-              </div>
-              <p className="text-sm text-slate-500 mt-3 leading-relaxed">{template.description}</p>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="max-w-7xl mx-auto px-5 pb-10">
-        <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
-          <div className="grid lg:grid-cols-[280px_1fr]">
-            <aside className="bg-slate-950 text-white p-6">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300 mb-5">Builder Workspace</p>
-              <div className="space-y-2">
-                <button
-                  onClick={() => setMode('build')}
-                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
-                    mode === 'build' ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10'
-                  }`}
-                >
-                  <PenLine className="w-4 h-4" />
-                  Build Resume
-                </button>
-                <button
-                  onClick={() => setMode('check')}
-                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
-                    mode === 'check' ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10'
-                  }`}
-                >
-                  <BarChart2 className="w-4 h-4" />
-                  ATS Checker
-                </button>
-              </div>
-
-              <div className="mt-8 rounded-2xl bg-white/10 border border-white/10 p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 mb-3">Resume essentials</p>
-                <div className="space-y-2">
-                  {['Contact info', 'Experience', 'Projects', 'Skills', 'Education'].map((item) => (
-                    <div key={item} className="flex items-center gap-2 text-sm text-slate-200">
-                      <CheckCircle className="w-4 h-4 text-emerald-400" />
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </aside>
-
-            <main className="p-5 md:p-7">
-              {error && (
-                <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {error}
-                </div>
-              )}
-
-              {mode === 'build' ? (
-                <div className="grid xl:grid-cols-[1fr_380px] gap-6">
-                  <section>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                      <div>
-                        <h2 className="text-xl font-bold text-slate-950" style={{ fontFamily: 'Outfit, sans-serif' }}>AI resume draft</h2>
-                        <p className="text-sm text-slate-500 mt-1">Generate from your progress, then edit before scoring.</p>
-                      </div>
-                      <button onClick={handleGenerateResume} disabled={generating} className="btn-primary">
-                        {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                        Generate
-                      </button>
-                    </div>
-
-                    <textarea
-                      value={resumeText}
-                      onChange={(event) => {
-                        setResumeText(event.target.value);
-                        setGeneratedResume(event.target.value);
-                      }}
-                      placeholder="Generate a resume from your interview progress, or paste your existing resume here..."
-                      className="w-full min-h-[430px] rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm leading-relaxed text-slate-800 resize-none outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
-                    />
-                    <div className="flex items-center justify-between mt-3 text-xs text-slate-400">
-                      <span>{wordCount} words</span>
-                      <span>{selectedTemplate.name} template selected</span>
-                    </div>
-                  </section>
-
-                  <aside className="space-y-4">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 mb-3">Role Target</p>
-                      <input
-                        value={targetRole}
-                        onChange={(event) => setTargetRole(event.target.value)}
-                        placeholder="e.g. Full Stack Developer"
-                        className="input-field"
-                      />
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 mb-3">Strong bullet examples</p>
-                      <div className="space-y-3">
-                        {sampleBullets.map((bullet) => (
-                          <div key={bullet} className="flex items-start gap-2 text-sm text-slate-700">
-                            <Briefcase className="w-4 h-4 mt-0.5 text-indigo-500 flex-shrink-0" />
-                            {bullet}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button onClick={() => setMode('check')} className="w-full btn-ghost py-3">
-                      <ArrowRight className="w-4 h-4" />
-                      Continue to ATS Check
-                    </button>
-                  </aside>
-                </div>
-              ) : (
-                <div className="grid xl:grid-cols-[1fr_360px] gap-6">
-                  <section>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                      <div>
-                        <h2 className="text-xl font-bold text-slate-950" style={{ fontFamily: 'Outfit, sans-serif' }}>Check your resume</h2>
-                        <p className="text-sm text-slate-500 mt-1">Paste text or upload a PDF, then compare against a job description.</p>
-                      </div>
-                      <label className="btn-ghost cursor-pointer">
-                        <Upload className="w-4 h-4" />
-                        Upload PDF
-                        <input type="file" accept=".pdf" className="hidden" onChange={handleFileInput} />
-                      </label>
-                    </div>
-
-                    <div
-                      onDrop={onDrop}
-                      onDragOver={(event) => event.preventDefault()}
-                      className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4"
-                    >
-                      <textarea
-                        value={resumeText}
-                        onChange={(event) => setResumeText(event.target.value)}
-                        placeholder="Paste resume text here, or drop a PDF on this area..."
-                        className="w-full min-h-[350px] bg-transparent text-sm leading-relaxed text-slate-800 resize-none outline-none"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between mt-3 text-xs text-slate-400">
-                      <span>{wordCount} words</span>
-                      <span className={resumeText.trim().length >= 30 ? 'text-emerald-600 font-semibold' : ''}>
-                        {resumeText.trim().length >= 30 ? 'Ready to score' : 'Add more content to score'}
+            <p className="section-title">Choose your style</p>
+            <p className="text-sm font-bold text-game-muted mt-0.5 mb-5">Pick a look, then build or check your content below.</p>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {templates.map((template) => {
+                const active = selectedTemplate.name === template.name;
+                return (
+                  <button
+                    key={template.name}
+                    onClick={() => setSelectedTemplate(template)}
+                    className="choice relative text-left p-3.5"
+                    style={active ? { borderColor: template.accent, boxShadow: `0 3px 0 ${template.accent}` } : undefined}
+                  >
+                    {active && (
+                      <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full text-white flex items-center justify-center border-2 border-white" style={{ background: template.accent }}>
+                        <Check className="w-3.5 h-3.5" strokeWidth={4} />
                       </span>
-                    </div>
-                  </section>
-
-                  <aside className="space-y-4">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 mb-3">Target Role</p>
-                      <input
-                        value={targetRole}
-                        onChange={(event) => setTargetRole(event.target.value)}
-                        placeholder="e.g. Backend Engineer"
-                        className="input-field"
-                      />
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 mb-2">Job Description</p>
-                      <textarea
-                        value={jobDescription}
-                        onChange={(event) => setJobDescription(event.target.value)}
-                        placeholder="Paste the job description to improve keyword matching..."
-                        className="w-full h-36 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-800 resize-none outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
-                      />
-                    </div>
-
-                    <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700 mb-3">Score Model</p>
-                      {[
-                        ['Keyword Match', '40'],
-                        ['Sections', '20'],
-                        ['Formatting', '20'],
-                        ['Metrics', '10'],
-                        ['Length', '10'],
-                      ].map(([label, value]) => (
-                        <div key={label} className="flex justify-between text-sm text-indigo-900 py-1">
-                          <span>{label}</span>
-                          <span className="font-bold">{value}</span>
+                    )}
+                    <div className="h-20 rounded-xl border-2 border-game-line bg-game-bg p-2.5 mb-3">
+                      <div className="h-full grid grid-cols-[32%_1fr] gap-2.5">
+                        <div className="rounded-lg" style={{ background: template.accent }} />
+                        <div className="space-y-1.5 py-0.5">
+                          <div className="h-2 w-2/3 rounded-full bg-game-ink" />
+                          <div className="h-1.5 w-1/2 rounded-full" style={{ background: template.accent }} />
+                          <div className="h-1.5 w-full rounded-full bg-[#DCDCEA]" />
+                          <div className="h-1.5 w-5/6 rounded-full bg-[#DCDCEA]" />
                         </div>
-                      ))}
+                      </div>
                     </div>
-
-                    <button
-                      onClick={handleAnalyze}
-                      disabled={loading || resumeText.trim().length < 30}
-                      className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart2 className="w-4 h-4" />}
-                      Get ATS Score
-                    </button>
-                  </aside>
-                </div>
-              )}
-
-              {generatedResume && mode === 'build' && (
-                <div className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 flex items-center gap-2">
-                  <Download className="w-4 h-4" />
-                  Draft generated. Review it, then run the ATS check before applying.
-                </div>
-              )}
-            </main>
+                    <p className="text-base font-black text-game-ink">{template.name}</p>
+                    <p className="text-xs font-black uppercase tracking-wide" style={{ color: template.accent }}>{template.tone}</p>
+                    <p className="text-xs font-bold text-game-muted mt-1.5 leading-snug">{template.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="hidden lg:block">
+            <ResumePreview template={selectedTemplate} />
           </div>
         </div>
       </section>
+
+      {/* Mode tabs */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
+        {tabs.map((t) => {
+          const active = mode === t.id;
+          const p = PALETTE[t.color];
+          return (
+            <button
+              key={t.id}
+              onClick={() => setMode(t.id)}
+              className="choice flex items-center gap-3 p-4 text-left"
+              style={active ? { borderColor: p.face, background: p.soft, boxShadow: `0 4px 0 ${p.face}` } : undefined}
+            >
+              <IconTile icon={t.icon} color={t.color} size="md" soft={!active} />
+              <div className="min-w-0">
+                <p className="text-base font-black" style={active ? { color: p.text } : undefined}>{t.label}</p>
+                <p className="text-xs font-bold text-game-muted hidden sm:block">{t.desc}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {error && (
+        <div className="mb-6 rounded-2xl border-2 border-[#FFC2C2] bg-game-red-soft px-4 py-3 text-sm font-bold text-game-red-edge">
+          {error}
+        </div>
+      )}
+
+      {mode === 'build' ? (
+        <div className="grid xl:grid-cols-[1fr_360px] gap-6">
+          <section className="card">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="section-title">AI resume draft</h2>
+                <p className="text-sm font-bold text-game-muted mt-0.5">Generate from your progress, then edit before scoring.</p>
+              </div>
+              <button onClick={handleGenerateResume} disabled={generating} className="btn-primary">
+                {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
+                Generate
+              </button>
+            </div>
+            <textarea
+              value={resumeText}
+              onChange={(event) => {
+                setResumeText(event.target.value);
+                setGeneratedResume(event.target.value);
+              }}
+              placeholder="Generate a resume from your interview progress, or paste your existing resume here…"
+              className="input-field min-h-[430px] resize-none !font-medium leading-relaxed"
+            />
+            <div className="flex items-center justify-between mt-3 text-sm font-bold text-game-muted">
+              <span>{wordCount} words</span>
+              <span>{selectedTemplate.name} template</span>
+            </div>
+            {generatedResume && (
+              <div className="mt-4 rounded-2xl border-2 border-[#C8EFA9] bg-game-green-soft px-4 py-3 text-sm font-bold text-game-green-edge flex items-center gap-2">
+                <Download className="w-5 h-5" />
+                Draft ready. Review it, then run the ATS check before applying.
+              </div>
+            )}
+          </section>
+
+          <aside className="space-y-6">
+            <div className="card">
+              <p className="text-sm font-black text-game-ink mb-2.5">Target role</p>
+              <input value={targetRole} onChange={(event) => setTargetRole(event.target.value)} placeholder="e.g. Full Stack Developer" className="input-field" />
+            </div>
+
+            <div className="card">
+              <p className="section-title mb-4">Strong bullet examples</p>
+              <div className="space-y-3.5">
+                {sampleBullets.map((bullet) => (
+                  <div key={bullet} className="flex items-start gap-2.5 text-sm font-semibold text-game-ink">
+                    <Briefcase className="w-5 h-5 text-game-purple flex-shrink-0" strokeWidth={2.4} />
+                    {bullet}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button onClick={() => setMode('check')} className="btn-green w-full !py-4">
+              Continue to ATS check <ArrowRight className="w-5 h-5" />
+            </button>
+          </aside>
+        </div>
+      ) : (
+        <div className="grid xl:grid-cols-[1fr_360px] gap-6">
+          <section className="card">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="section-title">Check your resume</h2>
+                <p className="text-sm font-bold text-game-muted mt-0.5">Paste text or upload a PDF, then compare against a job description.</p>
+              </div>
+              <label className="btn-ghost cursor-pointer">
+                <Upload className="w-5 h-5" /> Upload PDF
+                <input type="file" accept=".pdf" className="hidden" onChange={handleFileInput} />
+              </label>
+            </div>
+
+            <div onDrop={onDrop} onDragOver={(event) => event.preventDefault()} className="rounded-2xl border-2 border-dashed border-[#CFCFE0] bg-game-bg p-4 focus-within:border-game-green">
+              <textarea
+                value={resumeText}
+                onChange={(event) => setResumeText(event.target.value)}
+                placeholder="Paste resume text here, or drop a PDF on this area…"
+                className="w-full min-h-[350px] bg-transparent text-[15px] font-medium leading-relaxed text-game-ink placeholder:text-[#A9A9BF] resize-none outline-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-between mt-3 text-sm font-bold text-game-muted">
+              <span>{wordCount} words</span>
+              <span className={`inline-flex items-center gap-1 ${resumeText.trim().length >= 30 ? 'text-game-green-edge' : ''}`}>
+                {resumeText.trim().length >= 30 ? <><Check className="w-4 h-4" strokeWidth={3.5} /> Ready to score</> : 'Add more content to score'}
+              </span>
+            </div>
+          </section>
+
+          <aside className="space-y-6">
+            <div className="card space-y-4">
+              <div>
+                <p className="text-sm font-black text-game-ink mb-2.5">Target role</p>
+                <input value={targetRole} onChange={(event) => setTargetRole(event.target.value)} placeholder="e.g. Backend Engineer" className="input-field" />
+              </div>
+              <div>
+                <p className="text-sm font-black text-game-ink mb-2.5">Job description</p>
+                <textarea
+                  value={jobDescription}
+                  onChange={(event) => setJobDescription(event.target.value)}
+                  placeholder="Paste the job description to improve keyword matching…"
+                  className="input-field h-36 resize-none !font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="card">
+              <p className="section-title mb-4">How you're scored</p>
+              <div className="space-y-3">
+                {SCORE_MODEL.map(([label, value, color]) => (
+                  <div key={label}>
+                    <div className="flex justify-between text-sm font-extrabold mb-1">
+                      <span className="text-game-ink">{label}</span>
+                      <span className="text-game-muted">{value} pts</span>
+                    </div>
+                    <GameBar value={value * 2.5} color={color} height={10} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button onClick={handleAnalyze} disabled={loading || resumeText.trim().length < 30} className="btn-green w-full !py-4 !text-base">
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <BarChart2 className="w-5 h-5" />}
+              Get ATS score
+            </button>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }
